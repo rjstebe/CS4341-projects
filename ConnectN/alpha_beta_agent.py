@@ -1,6 +1,5 @@
 import math
 import agent
-import heuristics
 
 ###########################
 # Alpha-Beta Search Agent #
@@ -39,39 +38,41 @@ class AlphaBetaAgent(agent.Agent):
         value = -math.inf
         alpha = value
         best_col = -1
+        print(brd.free_cols())
         for col in brd.free_cols():
-            new_val = self.min_value(result(brd, col), alpha, math.inf, 1)
+            new_val = self.min_value(result(brd, col), alpha, math.inf, 1, col)
+            print(new_val)
             if new_val > value:
                 value = new_val
                 best_col = col
             alpha = max(alpha, value)
         return best_col
 
-    def max_value(self, brd, alpha, beta, depth):
-        utility = self.utility(brd, depth)
+    def max_value(self, brd, alpha, beta, depth, col):
+        utility = self.utility(brd, depth, col)
         if utility is not None:
             return utility
         value = -math.inf
-        for col in brd.free_cols():
-            value = max(value, self.min_value(result(brd, col), alpha, beta, depth + 1))
+        for next_col in brd.free_cols():
+            value = max(value, self.min_value(result(brd, next_col), alpha, beta, depth + 1, col))
             if value >= beta:
                 return value
             alpha = max(alpha, value)
         return value
 
-    def min_value(self, brd, alpha, beta, depth):
-        utility = self.utility(brd, depth)
+    def min_value(self, brd, alpha, beta, depth, col):
+        utility = self.utility(brd, depth, col)
         if utility is not None:
             return -utility  # Utility only is calculated in terms of the current player
         value = math.inf
-        for col in brd.free_cols():
-            value = min(value, self.max_value(result(brd, col), alpha, beta, depth + 1))
+        for next_col in brd.free_cols():
+            value = min(value, self.max_value(result(brd, next_col), alpha, beta, depth + 1, col))
             if value <= alpha:
                 return value
             beta = min(beta, value)
         return value
 
-    def utility(self, brd, depth):
+    def utility(self, brd, depth, col):
         outcome = brd.get_outcome()
         if outcome == brd.player:
             return 1
@@ -80,9 +81,12 @@ class AlphaBetaAgent(agent.Agent):
         elif brd.free_cols() == 0:
             return 0
         elif depth >= self.max_depth:
-            return heuristics.heuristic(brd)
+            return self.heuristic(brd, col)
         else:
             return None
+
+    def heuristic(self, brd, col):
+        return 0
 
     # Get the successors of the given board.
     #
@@ -109,4 +113,10 @@ class AlphaBetaAgent(agent.Agent):
             succ.append((nb,col))
         return succ
 
-# THE_AGENT = AlphaBetaAgent("Group23", 4)
+
+class CenterHeuristicAgent(AlphaBetaAgent):
+    def heuristic(self, brd, col):
+        return -abs(brd.w / 2 - col - 0.5)/brd.w
+
+
+THE_AGENT = CenterHeuristicAgent("Group23", 4)

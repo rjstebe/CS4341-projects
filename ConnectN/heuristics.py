@@ -1,6 +1,7 @@
-######################################
-# Alpha-Beta Search Agent Heuristics #
-######################################
+################################################
+# Alpha-Beta Search Agent Heuristic Subclasses #
+################################################
 
-def heuristic(brd):
-    return 0
+import alpha_beta_agent
+
+
