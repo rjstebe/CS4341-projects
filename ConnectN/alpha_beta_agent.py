@@ -38,10 +38,8 @@ class AlphaBetaAgent(agent.Agent):
         value = -math.inf
         alpha = value
         best_col = -1
-        print(brd.free_cols())
         for col in brd.free_cols():
             new_val = self.min_value(result(brd, col), alpha, math.inf, 1, col)
-            print(new_val)
             if new_val > value:
                 value = new_val
                 best_col = col
@@ -78,7 +76,7 @@ class AlphaBetaAgent(agent.Agent):
             return 1
         elif outcome != 0:
             return -1
-        elif brd.free_cols() == 0:
+        elif not brd.free_cols():
             return 0
         elif depth >= self.max_depth:
             return self.heuristic(brd, col)
