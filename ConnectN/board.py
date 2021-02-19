@@ -112,7 +112,11 @@ class Board(object):
                 if self.board[y][x] == 0:
                     print(" ", end='')
                 else:
-                    print(self.board[y][x], end='')
+                    if self.board[y][x] == 1:
+                        print("x", end='')
+                    else:
+                        print("o", end='')
+                    #print(self.board[y][x], end='')
             print("|")
         print("+", "-" * self.w, "+", sep='')
         print(" ", end='')

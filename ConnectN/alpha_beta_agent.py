@@ -1,5 +1,6 @@
 import math
 import agent
+import random
 
 ###########################
 # Alpha-Beta Search Agent #
@@ -13,6 +14,29 @@ def result(brd, col):
     # (This internally changes nb.player, check the method definition!)
     nb.add_token(col)
     return nb
+
+
+# Check if a pair of identical tokens exists starting at (x,y) and in direction (dx,dy)
+#
+# PARAM [int] x:  the x coordinate of the starting cell
+# PARAM [int] y:  the y coordinate of the starting cell
+# PARAM [int] dx: the step in the x direction
+# PARAM [int] dy: the step in the y direction
+# RETURN [Bool]: True if 2 tokens of the same type have been found, False otherwise
+def is_pair(brd, x, y, dx, dy):
+    """Return True if a pair of identical tokens exists starting at (x,y) and in direction (dx,dy)"""
+    # Avoid out-of-bounds errors
+    if ((x + dx >= brd.w) or
+              (y + dy < 0) or (y + dy >= brd.h)):
+        return 0
+    # Get token at (x,y)
+    t = brd.board[y][x]
+    # Go through elements
+    if brd.board[y + dy][x + dx] != t:
+        return 0
+    if t == brd.player:
+        return 1
+    return -1
 
 
 class AlphaBetaAgent(agent.Agent):
@@ -37,18 +61,22 @@ class AlphaBetaAgent(agent.Agent):
         """Search for the best move (choice of column for the token)"""
         value = -math.inf
         alpha = value
-        best_col = -1
+        best_cols = []
         for col in brd.free_cols():
             new_val = self.min_value(result(brd, col), alpha, math.inf, 1, col)
             if new_val > value:
                 value = new_val
-                best_col = col
+                best_cols = [col]
+            if new_val == value:
+                best_cols.append(col)
+            print(new_val)
             alpha = max(alpha, value)
-        return best_col
+        return best_cols[int((len(best_cols)-1)/2)]
 
     def max_value(self, brd, alpha, beta, depth, col):
         utility = self.utility(brd, depth, col)
         if utility is not None:
+            #print(utility)
             return utility
         value = -math.inf
         for next_col in brd.free_cols():
@@ -61,6 +89,7 @@ class AlphaBetaAgent(agent.Agent):
     def min_value(self, brd, alpha, beta, depth, col):
         utility = self.utility(brd, depth, col)
         if utility is not None:
+            #print(-utility)
             return -utility  # Utility only is calculated in terms of the current player
         value = math.inf
         for next_col in brd.free_cols():
@@ -73,9 +102,9 @@ class AlphaBetaAgent(agent.Agent):
     def utility(self, brd, depth, col):
         outcome = brd.get_outcome()
         if outcome == brd.player:
-            return 1
+            return 1000*self.max_depth/depth
         elif outcome != 0:
-            return -1
+            return -1000*self.max_depth/depth
         elif not brd.free_cols():
             return 0
         elif depth >= self.max_depth:
@@ -116,5 +145,16 @@ class CenterHeuristicAgent(AlphaBetaAgent):
     def heuristic(self, brd, col):
         return -abs(brd.w / 2 - col - 0.5)/brd.w
 
+
+class LineHeuristicAgent(AlphaBetaAgent):
+    def heuristic(self, brd, col):
+        value = 0
+        for x in range(brd.w):
+            for y in range(brd.h):
+                value += is_pair(brd, x, y, 0, 1)
+                value += is_pair(brd, x, y, 1, 1)
+                value += is_pair(brd, x, y, 1, 0)
+                value += is_pair(brd, x, y, 1, -1)
+        return value
 
 THE_AGENT = CenterHeuristicAgent("Group23", 4)
