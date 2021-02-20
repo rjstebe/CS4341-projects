@@ -56,9 +56,9 @@ random.seed(1)
 
 g = game.Game(7, # width
               6, # height
-              4, # tokens in a row to win
-              aba.CenterHeuristicAgent("center", 4),        # player 1
-              aba.LineHeuristicAgent("line", 4))  # player 2
+              5, # tokens in a row to win
+              aba.OneShortHeuristicAgent("oneshort", 6),
+              aba.LineHeuristicAgent("line", 6))  # player 2
 
 # Execute the game
 outcome = g.go()

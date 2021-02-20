@@ -22,7 +22,7 @@ def result(brd, col):
 # PARAM [int] y:  the y coordinate of the starting cell
 # PARAM [int] dx: the step in the x direction
 # PARAM [int] dy: the step in the y direction
-# RETURN [Bool]: True if 2 tokens of the same type have been found, False otherwise
+# RETURN [int]: True if 2 tokens of the same type have been found, False otherwise
 def is_pair(brd, x, y, dx, dy):
     """Return True if a pair of identical tokens exists starting at (x,y) and in direction (dx,dy)"""
     # Avoid out-of-bounds errors
@@ -34,6 +34,30 @@ def is_pair(brd, x, y, dx, dy):
     # Go through elements
     if brd.board[y + dy][x + dx] != t:
         return 0
+    if t == brd.player:
+        return 1
+    return -1
+
+
+# Check if a line of n-1 identical tokens exists starting at (x,y) and in direction (dx,dy)
+#
+# PARAM [int] x:  the x coordinate of the starting cell
+# PARAM [int] y:  the y coordinate of the starting cell
+# PARAM [int] dx: the step in the x direction
+# PARAM [int] dy: the step in the y direction
+# RETURN [int]: True if n-1 tokens of the same type have been found, False otherwise
+def is_one_short_line_at(brd, x, y, dx, dy):
+    """Return True if a line of n - 1 identical tokens exists starting at (x,y) in direction (dx,dy)"""
+    # Avoid out-of-bounds errors
+    if ((x + (brd.n-2) * dx >= brd.w) or
+        (y + (brd.n-2) * dy < 0) or (y + (brd.n-2) * dy >= brd.h)):
+        return 0
+    # Get token at (x,y)
+    t = brd.board[y][x]
+    # Go through elements
+    for i in range(1, brd.n - 1):
+        if brd.board[y + i*dy][x + i*dx] != t:
+            return 0
     if t == brd.player:
         return 1
     return -1
@@ -108,11 +132,11 @@ class AlphaBetaAgent(agent.Agent):
         elif not brd.free_cols():
             return 0
         elif depth >= self.max_depth:
-            return self.heuristic(brd, col)
+            return self.heuristic(brd, col, depth)
         else:
             return None
 
-    def heuristic(self, brd, col):
+    def heuristic(self, brd, col, depth):
         return 0
 
     # Get the successors of the given board.
@@ -142,12 +166,12 @@ class AlphaBetaAgent(agent.Agent):
 
 
 class CenterHeuristicAgent(AlphaBetaAgent):
-    def heuristic(self, brd, col):
-        return -abs(brd.w / 2 - col - 0.5)/brd.w
+    def heuristic(self, brd, col, depth):
+        return pow(-1, depth+1)*abs(brd.w / 2 - col - 0.5)/brd.w
 
 
 class LineHeuristicAgent(AlphaBetaAgent):
-    def heuristic(self, brd, col):
+    def heuristic(self, brd, col, depth):
         value = 0
         for x in range(brd.w):
             for y in range(brd.h):
@@ -156,5 +180,18 @@ class LineHeuristicAgent(AlphaBetaAgent):
                 value += is_pair(brd, x, y, 1, 0)
                 value += is_pair(brd, x, y, 1, -1)
         return value
+
+
+class OneShortHeuristicAgent(AlphaBetaAgent):
+    def heuristic(self, brd, col, depth):
+        value = 0
+        for x in range(brd.w):
+            for y in range(brd.h):
+                value += is_one_short_line_at(brd, x, y, 0, 1)
+                value += is_one_short_line_at(brd, x, y, 1, 1)
+                value += is_one_short_line_at(brd, x, y, 1, 0)
+                value += is_one_short_line_at(brd, x, y, 1, -1)
+        return value
+
 
 THE_AGENT = CenterHeuristicAgent("Group23", 4)
