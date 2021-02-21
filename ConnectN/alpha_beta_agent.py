@@ -1,6 +1,5 @@
 import math
 import agent
-import random
 
 ###########################
 # Alpha-Beta Search Agent #
@@ -61,6 +60,35 @@ def is_one_short_line_at(brd, x, y, dx, dy):
     if t == brd.player:
         return 1
     return -1
+
+
+# Check if a line of n-1 identical tokens exists starting at (x,y) and in direction (dx,dy)
+#
+# PARAM [int] x:  the x coordinate of the starting cell
+# PARAM [int] y:  the y coordinate of the starting cell
+# PARAM [int] dx: the step in the x direction
+# PARAM [int] dy: the step in the y direction
+# RETURN [int]: True if n-1 tokens of the same type have been found, False otherwise
+def is_possible_win(brd, x, y, dx, dy):
+    """Returns 1, or -1 if the current player, or other player respectively can still win in the line with length n, starting at (x,y) and in direction (dx,dy), and 0 otherwise"""
+    # Avoid out-of-bounds errors
+    if ((x + (brd.n-1) * dx >= brd.w) or
+        (y + (brd.n-1) * dy < 0) or (y + (brd.n-1) * dy >= brd.h)):
+        return 0
+    player = 1
+    opponent = 1
+    # Go through elements
+    for i in range(brd.n - 1):
+        if brd.board[y + i*dy][x + i*dx] == brd.player:
+            opponent = 0
+            if not player:
+                return 0
+        elif brd.board[y + i*dy][x + i*dx] != 0:
+            player = 0
+            if not opponent:
+                return 0
+    return player - opponent
+
 
 
 class AlphaBetaAgent(agent.Agent):
@@ -191,6 +219,18 @@ class OneShortHeuristicAgent(AlphaBetaAgent):
                 value += is_one_short_line_at(brd, x, y, 1, 1)
                 value += is_one_short_line_at(brd, x, y, 1, 0)
                 value += is_one_short_line_at(brd, x, y, 1, -1)
+        return value
+
+
+class PossibleWinsHeuristicAgent(AlphaBetaAgent):
+    def heuristic(self, brd, col, depth):
+        value = 0
+        for x in range(brd.w):
+            for y in range(brd.h):
+                value += is_possible_win(brd, x, y, 0, 1)
+                value += is_possible_win(brd, x, y, 1, 1)
+                value += is_possible_win(brd, x, y, 1, 0)
+                value += is_possible_win(brd, x, y, 1, -1)
         return value
 
 
