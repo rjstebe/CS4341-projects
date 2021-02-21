@@ -36,7 +36,9 @@ class Game(object):
         while self.board.free_cols() and self.board.get_outcome() == 0:
             self.board.print_it()
             # Copy board so player can't modify it
+            start = time.time()
             x = self.players[p].go(self.board.copy())
+            print("Time elapsed: " + str(time.time() - start))
             print(self.players[p].name, "move:", x)
             if not x in self.board.free_cols():
                 print("Illegal move")

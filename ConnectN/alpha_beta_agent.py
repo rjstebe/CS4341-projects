@@ -25,13 +25,12 @@ def result(brd, col):
 def is_pair(brd, x, y, dx, dy):
     """Return True if a pair of identical tokens exists starting at (x,y) and in direction (dx,dy)"""
     # Avoid out-of-bounds errors
-    if ((x + dx >= brd.w) or
-              (y + dy < 0) or (y + dy >= brd.h)):
+    if x + dx >= brd.w or y + dy < 0 or y + dy >= brd.h:
         return 0
     # Get token at (x,y)
     t = brd.board[y][x]
     # Go through elements
-    if brd.board[y + dy][x + dx] != t:
+    if t == 0 or brd.board[y + dy][x + dx] != t:
         return 0
     if t == brd.player:
         return 1
@@ -48,11 +47,12 @@ def is_pair(brd, x, y, dx, dy):
 def is_one_short_line_at(brd, x, y, dx, dy):
     """Return True if a line of n - 1 identical tokens exists starting at (x,y) in direction (dx,dy)"""
     # Avoid out-of-bounds errors
-    if ((x + (brd.n-2) * dx >= brd.w) or
-        (y + (brd.n-2) * dy < 0) or (y + (brd.n-2) * dy >= brd.h)):
+    if x + (brd.n - 2) * dx >= brd.w or y + (brd.n - 2) * dy < 0 or y + (brd.n - 2) * dy >= brd.h:
         return 0
     # Get token at (x,y)
     t = brd.board[y][x]
+    if t == 0:
+        return 0
     # Go through elements
     for i in range(1, brd.n - 1):
         if brd.board[y + i*dy][x + i*dx] != t:
@@ -70,10 +70,10 @@ def is_one_short_line_at(brd, x, y, dx, dy):
 # PARAM [int] dy: the step in the y direction
 # RETURN [int]: True if n-1 tokens of the same type have been found, False otherwise
 def is_possible_win(brd, x, y, dx, dy):
-    """Returns 1, or -1 if the current player, or other player respectively can still win in the line with length n, starting at (x,y) and in direction (dx,dy), and 0 otherwise"""
+    """Returns 1, or -1 if the current player, or other player respectively can still win in the line with length n,
+    starting at (x,y) and in direction (dx,dy), and 0 otherwise"""
     # Avoid out-of-bounds errors
-    if ((x + (brd.n-1) * dx >= brd.w) or
-        (y + (brd.n-1) * dy < 0) or (y + (brd.n-1) * dy >= brd.h)):
+    if x + (brd.n - 1) * dx >= brd.w or y + (brd.n - 1) * dy < 0 or y + (brd.n - 1) * dy >= brd.h:
         return 0
     player = 1
     opponent = 1
@@ -83,12 +83,11 @@ def is_possible_win(brd, x, y, dx, dy):
             opponent = 0
             if not player:
                 return 0
-        elif brd.board[y + i*dy][x + i*dx] != 0:
+        if brd.board[y + i*dy][x + i*dx] != 0:
             player = 0
             if not opponent:
                 return 0
     return player - opponent
-
 
 
 class AlphaBetaAgent(agent.Agent):
@@ -114,41 +113,48 @@ class AlphaBetaAgent(agent.Agent):
         value = -math.inf
         alpha = value
         best_cols = []
+        # print("alpha: " + str(alpha) + ", beta: " + str(math.inf))
         for col in brd.free_cols():
             new_val = self.min_value(result(brd, col), alpha, math.inf, 1, col)
+            print("col: " + str(col) + ", value: " + str(new_val))
             if new_val > value:
                 value = new_val
                 best_cols = [col]
             if new_val == value:
                 best_cols.append(col)
-            print(new_val)
             alpha = max(alpha, value)
         return best_cols[int((len(best_cols)-1)/2)]
 
     def max_value(self, brd, alpha, beta, depth, col):
         utility = self.utility(brd, depth, col)
         if utility is not None:
-            #print(utility)
+            # print(" " * depth + str(utility))
             return utility
+        # print(" "*depth + "max: alpha: " + str(alpha) + ", beta: " + str(beta))
         value = -math.inf
         for next_col in brd.free_cols():
             value = max(value, self.min_value(result(brd, next_col), alpha, beta, depth + 1, col))
-            if value >= beta:
+            if value > beta:
+                # print(" " * depth + "value: " + str(value))
                 return value
             alpha = max(alpha, value)
+        # print(" " * depth + "value: " + str(value))
         return value
 
     def min_value(self, brd, alpha, beta, depth, col):
         utility = self.utility(brd, depth, col)
         if utility is not None:
-            #print(-utility)
+            # print(" "*depth + str(-utility))
             return -utility  # Utility only is calculated in terms of the current player
+        # print(" "*depth + "min: alpha: " + str(alpha) + ", beta: " + str(beta))
         value = math.inf
         for next_col in brd.free_cols():
             value = min(value, self.max_value(result(brd, next_col), alpha, beta, depth + 1, col))
-            if value <= alpha:
+            if value < alpha:
+                # print(" " * depth + "value: " + str(value))
                 return value
             beta = min(beta, value)
+        # print(" " * depth + "value: " + str(value))
         return value
 
     def utility(self, brd, depth, col):
