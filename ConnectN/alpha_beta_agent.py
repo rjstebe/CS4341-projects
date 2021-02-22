@@ -240,4 +240,7 @@ class PossibleWinsHeuristicAgent(AlphaBetaAgent):
         return value
 
 
-THE_AGENT = CenterHeuristicAgent("Group23", 4)
+# THE_AGENT = PossibleWinsHeuristicAgent("Group23", 7) # <-- for 7x6 Connect 4
+# THE_AGENT = PossibleWinsHeuristicAgent("Group23", 5) # <-- for 10x8 Connect 4
+# THE_AGENT = CenterHeuristicAgent("Group23", 6) # <-- for 7x6 Connect 5
+# THE_AGENT = CenterHeuristicAgent("Group23", 5) # <-- for 10x8 Connect 5

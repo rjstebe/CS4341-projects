@@ -54,11 +54,11 @@ random.seed(1)
 #
 # Random vs. CenterHeuristic
 
-g = game.Game(7, # width
-              6, # height
-              4, # tokens in a row to win
-              aba.OneShortHeuristicAgent("oneshort1", 6),
-              aba.OneShortHeuristicAgent("oneshort2", 6),)  # player 2
+g = game.Game(10, # width
+              8, # height
+              5, # tokens in a row to win
+              aba.PossibleWinsHeuristicAgent("possiblewins", 5),
+              aba.OneShortHeuristicAgent("oneshort", 4))  # player 2
 
 # Execute the game
 outcome = g.go()
