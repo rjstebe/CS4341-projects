@@ -7,10 +7,10 @@ sys.path.insert(1, '..')
 from game import Game
 
 # TODO This is your code!
-sys.path.insert(1, '../groupNN')
+sys.path.insert(1, '../group23')
 
 # Uncomment this if you want the empty test character
-#from testcharacter import TestCharacter
+# from testcharacter import TestCharacter
 
 # Uncomment this if you want the interactive character
 from interactivecharacter import InteractiveCharacter
