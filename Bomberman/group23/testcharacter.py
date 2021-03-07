@@ -9,7 +9,43 @@ from colorama import Fore, Back
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        self.aStar(wrld)
+        if self.random_monster_in_range(wrld, 3):
+            if self.smart_monster_in_range(wrld, 3):
+                # combination of minimax and expectimax, or reinforcement learning
+                pass
+            else:
+                self.expectimax(wrld)
+        elif self.smart_monster_in_range(wrld, 3):
+            self.minimax(wrld)
+        elif not self.astar(wrld):
+            self.wall_search(wrld)
+
+        # expectimax: Mike
+        # minimax: Sam
+        # wall search: Ryan
+        # minimax/expectimax or reinforcement learning: Later
+
+        # minimax and expectimax looks at score + distance to exit
+        # variant 2: expectimax when monster is within 3 spaces
+
+        # variant 3: minimax when monster is within 3 spaces
+
+        # variant 4: minimax when monster is within 3 spaces
+
+        # variant 5: minimax/expectimax or reinforcement learning
+
+        # scenario 2: when astar fails, search to destroy next wall
+
+    def random_monster_in_range(self, wrld, distance):
+        pass
+
+    def expectimax(self, wrld):
+        pass
+
+    def smart_monster_in_range(self, wrld, distance):
+        pass
+
+    def minimax(self, wrld):
         pass
 
     # based on pseudocode from class lecture
@@ -26,7 +62,13 @@ class TestCharacter(CharacterEntity):
             current = frontier.get()[1]
 
             if current == wrld.index(exit[0], exit[1]):
-                break
+                # search reached exit: find first move
+                while previous[current] != start:
+                    self.set_cell_color(current % wrld.width(), int(current / wrld.width()), Fore.RED + Back.GREEN)
+                    current = previous[current]
+                # move in direction of first move
+                self.move(current % wrld.width() - self.x, int(current / wrld.width()) - self.y)
+                return True
 
             for x in [-1, 0, 1]:
                 for y in [-1, 0, 1]:
@@ -44,8 +86,8 @@ class TestCharacter(CharacterEntity):
                             frontier.put((priority, next_space))
                             previous[next_space] = current
 
-        while previous[current] != start:
-            self.set_cell_color(current % wrld.width(), int(current / wrld.width()), Fore.RED + Back.GREEN)
-            current = previous[current]
+        # if search failed to reach exit
+        return False
 
-        self.move(current % wrld.width() - self.x, int(current / wrld.width()) - self.y)
+    def wall_search(self, wrld):
+        pass
