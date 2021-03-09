@@ -122,7 +122,7 @@ class TestCharacter(CharacterEntity):
         return False
 
     def wall_search(self, wrld):
-        solution = self.wall_search_node(wrld, 2, 0)
+        solution = self.wall_search_node(wrld, 0, 2)
         self.move(solution[1], solution[2])
         if solution[3]:
             self.place_bomb()
@@ -131,6 +131,7 @@ class TestCharacter(CharacterEntity):
     # terminal state (for pruning)
     # depth starts at maximum depth and counts down, cutoff starts at 0
     def wall_search_node(self, wrld, depth, max_depth):
+        print("depth: ",depth)
         # terminal states (uses no motion and no bomb placed as dummy values)
         if game_end(wrld):
             return [-10000,0,0,False]  # if game ends its not because of reaching the exit in this case
@@ -158,7 +159,7 @@ class TestCharacter(CharacterEntity):
                         me.maybe_place_bomb = b
                         nw = wrld.next()[0]
                         # continue search on that board
-                        nv = self.wall_search_node(nw, depth+1, max_depth)
+                        nv = self.wall_search_node(nw, depth+1, max_depth)[0]
                         # update best if necessary
                         if nv > best[0]:
                             best = [nv, dx, dy, b]
