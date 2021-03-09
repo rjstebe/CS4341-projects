@@ -4,7 +4,40 @@ import sys
 sys.path.insert(0, '../bomberman')
 # Import necessary stuff
 from entity import CharacterEntity
+from events import Event
 from colorama import Fore, Back
+
+
+def wall_in_danger(wrld):
+    for e in wrld.events:
+        if e.tpe == Event.BOMB_HIT_WALL:
+            return True
+    return False
+    # for k, bomb in wrld.bombs.items():
+    #     nw = wrld.next()[0]
+    #     ev = nw.add_blast(bomb)
+    #     for e in ev:
+    #         if e.tpe == Event.BOMB_HIT_WALL:
+    #             return True
+    # return False
+
+
+def game_end(wrld):
+    # Time's up
+    if wrld.time <= 0:
+        return True
+    # No more characters left
+    if not wrld.characters:
+        return True
+    # Last man standing
+    if not wrld.exitcell:
+        count = 0
+        for k, clist in wrld.characters.items():
+            count = count + len(clist)
+        if count == 0:
+            return True
+    return False
+
 
 class TestCharacter(CharacterEntity):
 
@@ -17,7 +50,7 @@ class TestCharacter(CharacterEntity):
                 self.expectimax(wrld)
         elif self.smart_monster_in_range(wrld, 3):
             self.minimax(wrld)
-        elif not self.astar(wrld):
+        elif not self.a_star(wrld):
             self.wall_search(wrld)
 
         # expectimax: Mike
@@ -34,7 +67,7 @@ class TestCharacter(CharacterEntity):
 
         # variant 5: minimax/expectimax or reinforcement learning
 
-        # scenario 2: when astar fails, search to destroy next wall
+        # scenario 2: when a_star fails, search to destroy next wall
 
     def random_monster_in_range(self, wrld, distance):
         pass
@@ -49,7 +82,7 @@ class TestCharacter(CharacterEntity):
         pass
 
     # based on pseudocode from class lecture
-    def aStar(self, wrld):
+    def a_star(self, wrld):
         start = wrld.index(self.x, self.y)
         exit = wrld.exitcell
         frontier = queue.PriorityQueue()
@@ -76,8 +109,7 @@ class TestCharacter(CharacterEntity):
                     current_y = int(current / wrld.width())
                     if (0 <= current_x+x < wrld.width()) and\
                             (0 <= current_y+y < wrld.height()) and\
-                            (wrld.empty_at(current_x+x, current_y+y) or\
-                             wrld.exit_at(current_x+x, current_y+y)):
+                            not (wrld.wall_at(current_x+x, current_y+y)):
                         new_cost = cost_so_far[current] + 1
                         next_space = wrld.index(current_x+x, current_y+y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
@@ -90,4 +122,44 @@ class TestCharacter(CharacterEntity):
         return False
 
     def wall_search(self, wrld):
-        pass
+        solution = self.wall_search_node(wrld, 2, 0)
+        self.move(solution[1], solution[2])
+        if solution[3]:
+            self.place_bomb()
+
+    # Returns an array of best value, dx taken, dy taken, whether bomb was placed
+    # terminal state (for pruning)
+    # depth starts at maximum depth and counts down, cutoff starts at 0
+    def wall_search_node(self, wrld, depth, max_depth):
+        # terminal states (uses no motion and no bomb placed as dummy values)
+        if game_end(wrld):
+            return [-10000,0,0,False]  # if game ends its not because of reaching the exit in this case
+        me = wrld.me(self)
+        if depth >= max_depth:
+            # if at max depth, return negative distance to exit as a heuristic
+            value = -max(abs(wrld.exitcell[0] - me.x), abs(wrld.exitcell[1] - me.y))
+            if wall_in_danger(wrld):
+                # prioritize walls in danger
+                value += 1000
+            return [value,0,0,False]
+
+        # loop through all possible directions
+        best = [-10000,0,0,False]  # value, dx, dy, b
+        for dx in [-1,0,1]:
+            for dy in [-1,0,1]:
+                # check if direction is not out of bounds or blocked
+                if (0 <= me.x + dx < wrld.width()) and \
+                        (0 <= me.y + dy < wrld.height()) and \
+                        not (wrld.wall_at(me.x + dx, me.y + dy)):
+                    # iterate for when bomb is placed or not placed
+                    for b in [True, False]:
+                        # make next board with given inputs
+                        me.move(dx, dy)
+                        me.maybe_place_bomb = b
+                        nw = wrld.next()[0]
+                        # continue search on that board
+                        nv = self.wall_search_node(nw, depth+1, max_depth)
+                        # update best if necessary
+                        if nv > best[0]:
+                            best = [nv, dx, dy, b]
+        return best
