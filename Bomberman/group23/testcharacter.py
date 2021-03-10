@@ -1,11 +1,13 @@
 import queue
 # This is necessary to find the main code
 import sys
+
 sys.path.insert(0, '../bomberman')
 # Import necessary stuff
 from entity import CharacterEntity
 from events import Event
 from colorama import Fore, Back
+from sensed_world import SensedWorld
 
 
 def wall_in_danger(wrld):
@@ -42,7 +44,7 @@ def game_end(wrld):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 3):
+        if self.random_monster_in_range(wrld, 1):
             if self.smart_monster_in_range(wrld, 3):
                 # combination of minimax and expectimax, or reinforcement learning
                 pass
@@ -70,13 +72,100 @@ class TestCharacter(CharacterEntity):
         # scenario 2: when a_star fails, search to destroy next wall
 
     def random_monster_in_range(self, wrld, distance):
-        pass
+        player = wrld.characters.keys()
+        playerL = 0
+        for i in player:
+            playerL = i
+        playerX = playerL % wrld.width()
+        playerY = playerL // wrld.width()
+        monster = wrld.monsters.keys()
+        monsterL = 0
+        for i in monster:
+            monsterL = i
+        monsterX = monsterL % wrld.width()
+        monsterY = monsterL // wrld.width()
+        difX = abs(playerX - monsterX)
+        difY = abs(playerY - monsterY)
+        print(difX)
+        print(difY)
+        if (difX <= 3 and difY <= 3):
+            return 1
+        return 0
 
-    def expectimax(self, wrld):
-        pass
+    def expectimax(self, toClone):
+        wrld = SensedWorld.from_world(toClone)
+        cMoves = []
+        c = next(iter(wrld.characters.values()))[0]
+        # Loop through delta x
+        for dx in [-1, 0, 1]:
+            # Avoid out-of-bound indexing
+            if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
+                # Loop through delta y
+                for dy in [-1, 0, 1]:
+                    # Avoid out-of-bound indexing
+                    if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
+                        # No need to check impossible moves
+                        if not wrld.wall_at(c.x + dx, c.y + dy):
+                            # Set move in wrld
+                            c.move(dx, dy)
+                            # Get new world
+                            (newwrld, events) = wrld.next()
+                            b = 0
+                            for e in events:
+                                if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
+                                    b = 1
+                            if (b):
+                                continue
+                            value = self.expectimaxHelper(newwrld)
+                            moveTuple = (value, dx, dy)
+                            cMoves.append(moveTuple)
+        pMax = -800
+        i = 0
+        index = 0
+        for p in cMoves:
+            if (p[0] > pMax):
+                pMax = p[0]
+                index = i
+            i += 1
+        self.move(cMoves[index][1], cMoves[index][2])
+
+    def expectimaxHelper(self, wrld):
+        m = next(iter(wrld.monsters.values()))[0]
+        c = next(iter(wrld.characters.values()))[0]
+        heuristic = 0
+        # Loop through delta x
+        for dx in [-1, 0, 1]:
+            # Avoid out-of-bound indexing
+            if (m.x + dx >= 0) and (m.x + dx < wrld.width()):
+                # Loop through delta y
+                for dy in [-1, 0, 1]:
+                    # Make sure the monster is moving
+                    if (dx != 0) or (dy != 0):
+                        # Avoid out-of-bound indexing
+                        if (m.y + dy >= 0) and (m.y + dy < wrld.height()):
+                            # No need to check impossible moves
+                            if not wrld.wall_at(m.x + dx, m.y + dy):
+                                # Set move in wrld
+                                m.move(dx, dy)
+                                # Get new world
+                                (newwrld, events) = wrld.next()
+                                for e in events:
+                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
+                                        heuristic -= ((wrld.height() + wrld.width()) / 2)
+                                    elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
+                                        heuristic += (wrld.height() + wrld.width())
+                                mm = next(iter(newwrld.monsters.values()))[0]
+                                difXcm = abs(c.x - mm.x)
+                                difYcm = abs(c.y - mm.y)
+                                difXce = abs(c.x - wrld.exitcell[0])
+                                difYce = abs(c.y - wrld.exitcell[1])
+                                difcm = difXcm + difYcm
+                                curV = 0.2 * difcm - 0.1 * difXce - 0.7 * difYce
+                                heuristic += curV
+            return heuristic
 
     def smart_monster_in_range(self, wrld, distance):
-        pass
+        return 0
 
     def minimax(self, wrld):
         pass
@@ -107,14 +196,14 @@ class TestCharacter(CharacterEntity):
                 for y in [-1, 0, 1]:
                     current_x = current % wrld.width()
                     current_y = int(current / wrld.width())
-                    if (0 <= current_x+x < wrld.width()) and\
-                            (0 <= current_y+y < wrld.height()) and\
-                            not (wrld.wall_at(current_x+x, current_y+y)):
+                    if (0 <= current_x + x < wrld.width()) and \
+                            (0 <= current_y + y < wrld.height()) and \
+                            not (wrld.wall_at(current_x + x, current_y + y)):
                         new_cost = cost_so_far[current] + 1
-                        next_space = wrld.index(current_x+x, current_y+y)
+                        next_space = wrld.index(current_x + x, current_y + y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
                             cost_so_far[next_space] = new_cost
-                            priority = new_cost + max(abs(exit[0]-current_x-x), abs(exit[1]-current_y-y))
+                            priority = new_cost + max(abs(exit[0] - current_x - x), abs(exit[1] - current_y - y))
                             frontier.put((priority, next_space))
                             previous[next_space] = current
 
@@ -131,10 +220,9 @@ class TestCharacter(CharacterEntity):
     # terminal state (for pruning)
     # depth starts at maximum depth and counts down, cutoff starts at 0
     def wall_search_node(self, wrld, depth, max_depth):
-        print("depth: ",depth)
         # terminal states (uses no motion and no bomb placed as dummy values)
         if game_end(wrld):
-            return [-10000,0,0,False]  # if game ends its not because of reaching the exit in this case
+            return [-10000, 0, 0, False]  # if game ends its not because of reaching the exit in this case
         me = wrld.me(self)
         if depth >= max_depth:
             # if at max depth, return negative distance to exit as a heuristic
@@ -142,12 +230,12 @@ class TestCharacter(CharacterEntity):
             if wall_in_danger(wrld):
                 # prioritize walls in danger
                 value += 1000
-            return [value,0,0,False]
+            return [value, 0, 0, False]
 
         # loop through all possible directions
-        best = [-10000,0,0,False]  # value, dx, dy, b
-        for dx in [-1,0,1]:
-            for dy in [-1,0,1]:
+        best = [-10000, 0, 0, False]  # value, dx, dy, b
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
                 # check if direction is not out of bounds or blocked
                 if (0 <= me.x + dx < wrld.width()) and \
                         (0 <= me.y + dy < wrld.height()) and \
@@ -159,7 +247,7 @@ class TestCharacter(CharacterEntity):
                         me.maybe_place_bomb = b
                         nw = wrld.next()[0]
                         # continue search on that board
-                        nv = self.wall_search_node(nw, depth+1, max_depth)[0]
+                        nv = self.wall_search_node(nw, depth + 1, max_depth)[0]
                         # update best if necessary
                         if nv > best[0]:
                             best = [nv, dx, dy, b]
