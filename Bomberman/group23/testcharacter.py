@@ -164,3 +164,24 @@ class TestCharacter(CharacterEntity):
                         if nv > best[0]:
                             best = [nv, dx, dy, b]
         return best
+
+def utility(self, wrld):
+	if game_end(wrld):
+	    return -100;
+	elif ___:
+	    return wrld.time
+	else:
+	    return max(abs(exit[0]-current_x-x), abs(exit[1]-current_y-y))
+
+
+
+        if outcome == brd.player:
+            return 1000*self.max_depth/depth
+        elif outcome != 0:
+            return -1000*self.max_depth/depth
+        elif not brd.free_cols():
+            return 0
+        elif depth >= self.max_depth:
+            return self.heuristic(brd, col, depth)
+        else:
+            return None
