@@ -1,6 +1,7 @@
 import queue
 # This is necessary to find the main code
 import sys
+import math
 
 sys.path.insert(0, '../bomberman')
 # Import necessary stuff
@@ -45,7 +46,7 @@ class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
         if self.random_monster_in_range(wrld, 1):
-            if self.smart_monster_in_range(wrld, 3):
+            if self.smart_monster_in_range(wrld, 2):
                 print('AAAAAA')
                 # combination of minimax and expectimax, or reinforcement learning
                 pass
@@ -325,8 +326,8 @@ class TestCharacter(CharacterEntity):
                                 mm = next(iter(newwrld.monsters.values()))[0]
                                 difXcm = abs(c.x - mm.x)
                                 difYcm = abs(c.y - mm.y)
-                                difcm = sqrt((difXcm * difXcm) + (difYcm * difYcm))
-                                dist = (difcm, x, y)
+                                difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
+                                dist = (difcm, m.x, m.y)
                                 distTuples.append(dist)
 
         pMin = 800
@@ -337,8 +338,8 @@ class TestCharacter(CharacterEntity):
                 pMax = p[0]
                 index = i
             i += 1
-        m.move(distTuple[1] - m.x, distTuple[2] - m.y)
-        return maxHelper(wrld)
+        m.move(distTuples[index][1] - m.x, distTuples[index][2] - m.y)
+        return self.maxHelper(wrld)
 
 
     def maxHelper(self, wrld):
@@ -346,6 +347,8 @@ class TestCharacter(CharacterEntity):
         c = next(iter(wrld.characters.values()))[0]
         heuristic = 0
         hTuples = []
+        exit = wrld.exitcell
+        event_found = 0
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
@@ -364,23 +367,30 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= ((wrld.height() + wrld.width()) / 2)
+                                        heuristic -= 100
+                                        print('aa ' + str(heuristic))
+                                        event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic += (wrld.height() + wrld.width())
-                                cc = next(iter(newwrld.characters.values()))[0]
-                                difXcm = abs(cc.x - m.x)
-                                difYcm = abs(cc.y - m.y)
-                                difcm = sqrt((difXcm * difXcm) + (difYcm * difYcm))
-                                dist = (difcm, x, y)
-                                hueristic = dist - max(abs(exit[0]-x), abs(exit[1]-y))
-                                h = (heuristic, x, y)
-                                hTuples.append(dist)
+                                        heuristic += 1000
+                                        print('bb ' + str(heuristic))
+                                        event_found = 1
 
-        pMax = -800
+                                if (event_found == 0):
+                                    cc = next(iter(newwrld.characters.values()))[0]
+                                    difXcm = abs(cc.x - m.x)
+                                    difYcm = abs(cc.y - m.y)
+                                    difcm = (difXcm * difXcm) + (difYcm * difYcm)
+                                    heuristic = difcm - max(abs(exit[0]-cc.x), abs(exit[1]-cc.y))
+                                    print('cc ' + str(difcm) + ' ' + str(max(abs(exit[0]-cc.x), abs(exit[1]-cc.y))) + ' ' + str(heuristic))
+                                h = (heuristic, c.x, c.y)
+                                print(str(dx) + ' ' + str(dx) + ' ' + str(heuristic))
+                                hTuples.append(h)
+
+        pMin = 800
         i = 0
         index = 0
         for p in hTuples:
-            if (p[0] > pMax):
+            if (p[0] < pMin):
                 pMax = p[0]
                 index = i
             i += 1
