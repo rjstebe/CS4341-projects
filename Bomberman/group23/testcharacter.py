@@ -165,23 +165,74 @@ class TestCharacter(CharacterEntity):
                             best = [nv, dx, dy, b]
         return best
 
-def utility(self, wrld):
-	if game_end(wrld):
-	    return -100;
-	elif ___:
+
+#loopy things
+	current_x = x
+	current_y = y
+	    for add_x in [-1, 0, 1]:
+                for add_y in [-1, 0, 1]:
+                    
+                    if (0 <= current_x+add_x < wrld.width()) and\
+                            (0 <= current_y+add_y < wrld.height()) and\
+                            not (wrld.wall_at(current_x+add_x, current_y+add_y)):
+				#???
+				#self.min_value(wrld, alpha, beta, current_x, current_y, 1)
+                        
+
+#from connect-n
+    def go(self, brd):
+        """Search for the best move (choice of column for the token)"""
+        value = -math.inf
+        alpha = value
+        best_cols = []
+        # print("alpha: " + str(alpha) + ", beta: " + str(math.inf))
+        for col in brd.free_cols():
+            new_val = self.min_value(result(brd, col), alpha, math.inf, 1, col)
+            print("col: " + str(col) + ", value: " + str(new_val))
+            if new_val > value:
+                value = new_val
+                best_cols = [col]
+            if new_val == value:
+                best_cols.append(col)
+            alpha = max(alpha, value)
+        return best_cols[int((len(best_cols)-1)/2)]
+
+    def max_value(self, wrld, alpha, beta, x, y, depth):
+        utility = self.utility(wrld, x, y)
+        if utility is not None:
+            return utility
+        value = -math.inf
+	# something about moving differently        
+	for next_col in brd.free_cols():
+            value = max(value, self.min_value(result(brd, next_col), alpha, beta, depth + 1, col))
+            if value > beta:
+                return value
+            alpha = max(alpha, value)
+        return value
+
+    def min_value(self, brd, alpha, beta, x, y, depth):
+        utility = self.utility(wrld, x, y)
+        if utility is not None:
+            return utility
+        value = math.inf
+	# something about moving differently
+        for next_col in brd.free_cols():
+            value = min(value, self.max_value(result(brd, next_col), alpha, beta, depth + 1, col))
+            if value < alpha:
+                # print(" " * depth + "value: " + str(value))
+                return value
+            beta = min(beta, value)
+        return value
+
+
+    def utility(self, wrld, x, y, depth):
+	exit = wrld.exitcell
+	if (x == exit[0]) && (x == exit[0])
 	    return wrld.time
-	else:
-	    return max(abs(exit[0]-current_x-x), abs(exit[1]-current_y-y))
+	elif game_end(wrld):
+	    return -100;
+	elif depth >= 3:
+	    return -max(abs(exit[0]-x), abs(exit[1]-y)) # not the proper dist formula
+	else
+	    return None
 
-
-
-        if outcome == brd.player:
-            return 1000*self.max_depth/depth
-        elif outcome != 0:
-            return -1000*self.max_depth/depth
-        elif not brd.free_cols():
-            return 0
-        elif depth >= self.max_depth:
-            return self.heuristic(brd, col, depth)
-        else:
-            return None
