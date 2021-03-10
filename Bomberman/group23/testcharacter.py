@@ -46,11 +46,13 @@ class TestCharacter(CharacterEntity):
     def do(self, wrld):
         if self.random_monster_in_range(wrld, 1):
             if self.smart_monster_in_range(wrld, 3):
+                print('AAAAAA')
                 # combination of minimax and expectimax, or reinforcement learning
                 pass
             else:
                 self.expectimax(wrld)
         elif self.smart_monster_in_range(wrld, 3):
+            print('BBBBB')
             self.minimax(wrld)
         elif not self.a_star(wrld):
             self.wall_search(wrld)
@@ -71,6 +73,9 @@ class TestCharacter(CharacterEntity):
 
         # scenario 2: when a_star fails, search to destroy next wall
 
+    def smart_monster_in_range(self, wrld, distance):
+        return (self.random_monster_in_range(wrld, distance))
+
     def random_monster_in_range(self, wrld, distance):
         player = wrld.characters.keys()
         playerL = 0
@@ -88,7 +93,7 @@ class TestCharacter(CharacterEntity):
         difY = abs(playerY - monsterY)
         print(difX)
         print(difY)
-        if (difX <= 3 and difY <= 3):
+        if (difX <= distance and difY <= distance):
             return 1
         return 0
 
@@ -164,8 +169,6 @@ class TestCharacter(CharacterEntity):
                                 heuristic += curV
             return heuristic
 
-    def smart_monster_in_range(self, wrld, distance):
-	return self.random_monster_in_range(wrld, distance)
 
 
 
@@ -256,7 +259,7 @@ class TestCharacter(CharacterEntity):
 
 
 
-def minimax(self, toClone):
+    def minimax(self, toClone):
         wrld = SensedWorld.from_world(toClone)
         cMoves = []
         c = next(iter(wrld.characters.values()))[0]
@@ -297,7 +300,7 @@ def minimax(self, toClone):
         m = next(iter(wrld.monsters.values()))[0]
         c = next(iter(wrld.characters.values()))[0]
         heuristic = 0
-	distTuples = []
+        distTuples = []
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
@@ -324,9 +327,9 @@ def minimax(self, toClone):
                                 difYcm = abs(c.y - mm.y)
                                 difcm = sqrt((difXcm * difXcm) + (difYcm * difYcm))
                                 dist = (difcm, x, y)
- 				distTuples.append(dist)
+                                distTuples.append(dist)
 
-	pMin = 800
+        pMin = 800
         i = 0
         index = 0
         for p in distTuples:
@@ -335,14 +338,14 @@ def minimax(self, toClone):
                 index = i
             i += 1
         m.move(distTuple[1] - m.x, distTuple[2] - m.y)
-            return maxHelper(wrld)
+        return maxHelper(wrld)
 
 
-def maxHelper(self, wrld):
+    def maxHelper(self, wrld):
         m = next(iter(wrld.monsters.values()))[0]
         c = next(iter(wrld.characters.values()))[0]
         heuristic = 0
-	hTuples = []
+        hTuples = []
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
@@ -369,11 +372,11 @@ def maxHelper(self, wrld):
                                 difYcm = abs(cc.y - m.y)
                                 difcm = sqrt((difXcm * difXcm) + (difYcm * difYcm))
                                 dist = (difcm, x, y)
-				hueristic = dist - max(abs(exit[0]-x), abs(exit[1]-y))
-				h = (heuristic, x, y)
- 				hTuples.append(dist)
+                                hueristic = dist - max(abs(exit[0]-x), abs(exit[1]-y))
+                                h = (heuristic, x, y)
+                                hTuples.append(dist)
 
-	pMax = -800
+        pMax = -800
         i = 0
         index = 0
         for p in hTuples:
