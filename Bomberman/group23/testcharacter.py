@@ -1,4 +1,5 @@
 import queue
+import math
 # This is necessary to find the main code
 import sys
 
@@ -44,15 +45,18 @@ def game_end(wrld):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 1):
+        if self.random_monster_in_range(wrld, 2):
             if self.smart_monster_in_range(wrld, 3):
                 # combination of minimax and expectimax, or reinforcement learning
                 pass
             else:
+                print("expectimax")
                 self.expectimax(wrld)
         elif self.smart_monster_in_range(wrld, 3):
+            print("minimax")
             self.minimax(wrld)
         elif not self.a_star(wrld):
+            print("wall search")
             self.wall_search(wrld)
 
         # expectimax: Mike
@@ -88,7 +92,7 @@ class TestCharacter(CharacterEntity):
         difY = abs(playerY - monsterY)
         print(difX)
         print(difY)
-        if (difX <= 3 and difY <= 3):
+        if (difX <= distance and difY <= distance):
             return 1
         return 0
 
@@ -114,12 +118,15 @@ class TestCharacter(CharacterEntity):
                             for e in events:
                                 if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
                                     b = 1
+                                if (e.tpe == Event.CHARACTER_FOUND_EXIT):
+                                    self.move(dx, dy)
+                                    return
                             if (b):
                                 continue
                             value = self.expectimaxHelper(newwrld)
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
-        pMax = -800
+        pMax = -math.inf
         i = 0
         index = 0
         for p in cMoves:
@@ -151,9 +158,9 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= ((wrld.height() + wrld.width()) / 2)
+                                        heuristic -= 10000#((wrld.height() + wrld.width()) / 2)
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic += (wrld.height() + wrld.width())
+                                        heuristic += 10000#(wrld.height() + wrld.width())
                                 mm = next(iter(newwrld.monsters.values()))[0]
                                 difXcm = abs(c.x - mm.x)
                                 difYcm = abs(c.y - mm.y)
@@ -171,6 +178,7 @@ class TestCharacter(CharacterEntity):
 
     # based on pseudocode from class lecture
     def a_star(self, wrld):
+        print("astar")
         start = wrld.index(self.x, self.y)
         exit = wrld.exitcell
         frontier = queue.PriorityQueue()
@@ -185,16 +193,16 @@ class TestCharacter(CharacterEntity):
             if current == wrld.index(exit[0], exit[1]):
                 # search reached exit: find first move
                 while previous[current] != start:
-                    self.set_cell_color(current % wrld.width(), int(current / wrld.width()), Fore.RED + Back.GREEN)
+                    self.set_cell_color(current % wrld.width(), current // wrld.width(), Fore.RED + Back.GREEN)
                     current = previous[current]
                 # move in direction of first move
-                self.move(current % wrld.width() - self.x, int(current / wrld.width()) - self.y)
+                self.move(current % wrld.width() - self.x, current // wrld.width() - self.y)
                 return True
 
             for x in [-1, 0, 1]:
                 for y in [-1, 0, 1]:
                     current_x = current % wrld.width()
-                    current_y = int(current / wrld.width())
+                    current_y = current // wrld.width()
                     if (0 <= current_x + x < wrld.width()) and \
                             (0 <= current_y + y < wrld.height()) and \
                             not (wrld.wall_at(current_x + x, current_y + y)):
@@ -210,7 +218,7 @@ class TestCharacter(CharacterEntity):
         return False
 
     def wall_search(self, wrld):
-        solution = self.wall_search_node(wrld, 0, 2)
+        solution = self.wall_search_node(wrld, 0, 3)
         self.move(solution[1], solution[2])
         if solution[3]:
             self.place_bomb()
