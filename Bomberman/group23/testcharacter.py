@@ -76,22 +76,21 @@ class TestCharacter(CharacterEntity):
         # scenario 2: when a_star fails, search to destroy next wall
 
     def random_monster_in_range(self, wrld, distance):
-        player = wrld.characters.keys()
-        playerL = 0
-        for i in player:
-            playerL = i
-        playerX = playerL % wrld.width()
-        playerY = playerL // wrld.width()
-        monster = wrld.monsters.keys()
-        monsterL = 0
-        for i in monster:
-            monsterL = i
-        monsterX = monsterL % wrld.width()
-        monsterY = monsterL // wrld.width()
+        monsterList = iter(wrld.monsters.values())
+        m = next(monsterList, 0)
+        if (m == 0):
+            return 0;
+        if (m[0].name != "stupid"):
+            m = next(monsterList, 0)
+            if (m == 0 or m[0].name != "stupid"):
+                return 0
+        m = m[0]
+        playerX = self.x
+        playerY = self.y
+        monsterX = m.x
+        monsterY = m.y
         difX = abs(playerX - monsterX)
         difY = abs(playerY - monsterY)
-        print(difX)
-        print(difY)
         if (difX <= distance and difY <= distance):
             return 1
         return 0
