@@ -171,8 +171,8 @@ class TestCharacter(CharacterEntity):
                                 heuristic += curV
             return heuristic
 
-    def smart_monster_in_range(self, wrld, distance):
-	return self.random_monster_in_range(wrld, distance)
+    def smart_monster_in_range(self, wrld, distance): 
+        return self.random_monster_in_range(wrld, distance)
 
 
 
