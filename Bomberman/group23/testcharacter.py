@@ -48,6 +48,7 @@ class TestCharacter(CharacterEntity):
         if self.random_monster_in_range(wrld, 2):
             if self.smart_monster_in_range(wrld, 3):
                 # combination of minimax and expectimax, or reinforcement learning
+                self.miniexpectimax(wrld)
                 pass
             else:
                 print("expectimax")
@@ -234,6 +235,19 @@ class TestCharacter(CharacterEntity):
         # if search failed to reach exit
         return False
 
+    def miniexpectimax(self, wrld):
+        solution = self.miniexpectimax_node(wrld, 0, 3, 0)
+        self.move(solution[1], solution[2])
+        if solution[3]:
+            self.place_bomb()
+
+    # Returns an array of best value, dx taken, dy taken, whether bomb was placed
+    def miniexpectimax_node(self, wrld, depth, max_depth, score_gained):
+        # terminal states (uses no motion and no bomb placed as dummy values)
+        # if dead, h = score at start plus walls destroyed plus monsters destroyed*5
+        # if exited, h = score at start plus walls plus monsters*5 plus 2*time remaining
+        # if escaped range, h = score at start plus walls plus monsters*5 plus 2*(time remaining - distance to exit)
+
     def wall_search(self, wrld):
         solution = self.wall_search_node(wrld, 0, 3)
         self.move(solution[1], solution[2])
@@ -241,8 +255,6 @@ class TestCharacter(CharacterEntity):
             self.place_bomb()
 
     # Returns an array of best value, dx taken, dy taken, whether bomb was placed
-    # terminal state (for pruning)
-    # depth starts at maximum depth and counts down, cutoff starts at 0
     def wall_search_node(self, wrld, depth, max_depth):
         # terminal states (uses no motion and no bomb placed as dummy values)
         if game_end(wrld):
