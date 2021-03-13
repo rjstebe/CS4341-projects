@@ -168,7 +168,7 @@ class TestCharacter(CharacterEntity):
                                 difcm = difXcm + difYcm
                                 curV = 0.2 * difcm - 0.1 * difXce - 0.7 * difYce
                                 heuristic += curV
-            return heuristic
+        return heuristic
 
     def smart_monster_in_range(self, wrld, distance):
         return 0
