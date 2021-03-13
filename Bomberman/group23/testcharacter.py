@@ -368,10 +368,10 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic += 1000
+                                        heuristic -= 1000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic -= 1000
+                                        heuristic += 1000
                                         event_found = 1
 
                                 if (event_found == 0):
@@ -379,20 +379,27 @@ class TestCharacter(CharacterEntity):
                                     difXcm = abs(cc.x - m.x)
                                     difYcm = abs(cc.y - m.y)
                                     # difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
-                                    difcm = difXcm + difYcm
+                                    # difcm = difXcm + difYcm
                                     # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
-                                    distToExit = max(abs(exit[0]-cc.x), abs(exit[1]-cc.y))
+                                    distToExit = max(abs(exit[0]-cc.x), abs(exit[1]-cc.y)) 
                                     # distToExit = math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
                                     # emptyAround = self.emptyCellsAround(wrld, c)
                                     # largestPossDist = max(wrld.width(), wrld.height())
                                     # heuristic = difcm + -1 * (distToExit - largestPossDist) + emptyAround
-                                    heuristic = difcm - (distToExit * distToExit)  + emptyAround            
-                                    if (difcm <= 2):
-                                        heuristic = 700
-                                    if (distToExit < 1.5):
-                                        heuristic -= 500
-                                    print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                     
-                                h = (heuristic, c.x, c.y)
+                                    #heuristic = difcm - (distToExit * distToExit)  + emptyAround            
+                                    # if (difcm <= 2):
+                                        # heuristic = 700
+                                    # if (distToExit < 1.5):
+                                        # heuristic -= 500
+                                    # print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                     
+                                    heuristic = -1 * distToExit
+                                    print(str(cc.x) + "," + str(cc.y) + " " + str(m.x) + "," + str(m.y))
+                                    if not ((difXcm <3 and difYcm <3)):
+                                        print('here')
+                                        heuristic += 1000
+                                    
+                                h = (heuristic, dx, dy)
+                                print(h)
                                 hTuples.append(h)
 
 
@@ -407,6 +414,15 @@ class TestCharacter(CharacterEntity):
 
         return pMax
 
+    def monster_in_range(self, difXcm, difYcm):
+        if (difXcm <=2 and difYcm <= 2):
+            return 1
+        #elif (difYcm <=2 and difYcm == 0):
+            #return 1
+        #elif (difYcm == difXcm) and ((difYcm ==1) or (difYcm ==2)):
+            #return 1
+        else:
+            return 0
 
     def emptyCellsAround(self, wrld, c):
         emptyAround = 0
