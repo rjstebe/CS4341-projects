@@ -171,6 +171,23 @@ class TestCharacter(CharacterEntity):
         return heuristic
 
     def smart_monster_in_range(self, wrld, distance):
+        monsterList = iter(wrld.monsters.values())
+        m = next(monsterList, 0)
+        if (m == 0):
+            return 0;
+        if (m[0].name == "stupid"):
+            m = next(monsterList, 0)
+            if (m == 0 or m[0].name == "stupid"):
+                return 0
+        m = m[0]
+        playerX = self.x
+        playerY = self.y
+        monsterX = m.x
+        monsterY = m.y
+        difX = abs(playerX - monsterX)
+        difY = abs(playerY - monsterY)
+        if (difX <= distance and difY <= distance):
+            return 1
         return 0
 
     def minimax(self, wrld):
