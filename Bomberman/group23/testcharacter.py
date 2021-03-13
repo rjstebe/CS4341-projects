@@ -383,18 +383,11 @@ class TestCharacter(CharacterEntity):
                                     difcm = difXcm + difYcm
                                     # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
                                     distToExit = (abs(exit[0]-cc.x) + abs(exit[1]-cc.y))
-                                    emptyAround = 0
-                                    for dx in [-1, 0, 1]:
-                                        # Avoid out-of-bound indexing
-                                        if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
-                                            # Loop through delta y
-                                            for dy in [-1, 0, 1]:
-                                                if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
-                                                    if (wrld.empty_at(c.x+ dx, c.y+dy)):
-                                                         emptyAround += 1
-
-
-                                    heuristic = 1.5 * difcm - 0.99 * distToExit + 0.4 * emptyAround                                
+                                    emptyAround = self.emptyCellsAround(wrld, c)
+                                    heuristic = 2 * difcm - distToExit + emptyAround
+                                    print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                                 
+                                    if (difXcm < 1) or (difYcm < 1):
+                                        heuristic = -500
                                 h = (heuristic, c.x, c.y)
                                 hTuples.append(h)
 
@@ -412,5 +405,19 @@ class TestCharacter(CharacterEntity):
             return -1000
         else:
             return pMin
+
+
+    def emptyCellsAround(self, wrld, c):
+        emptyAround = 0
+        for dx in [-1, 0, 1]:
+        # Avoid out-of-bound indexing
+            if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
+                # Loop through delta y
+                for dy in [-1, 0, 1]:
+                     if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
+                          if (wrld.empty_at(c.x+ dx, c.y+dy)):
+                               emptyAround += 1
+        print(str(emptyAround) + " empty spaces")
+        return emptyAround
 
 
