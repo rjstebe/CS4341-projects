@@ -45,14 +45,14 @@ def game_end(wrld):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 1):
-            if self.smart_monster_in_range(wrld, 2):
-                print('AAAAAA')
+        # if self.random_monster_in_range(wrld, 1):
+            # if self.smart_monster_in_range(wrld, 2):
+                # print('AAAAAA')
                 # combination of minimax and expectimax, or reinforcement learning
-                pass
-            else:
-                self.expectimax(wrld)
-        elif self.smart_monster_in_range(wrld, 3):
+                # pass
+            # else:
+                # self.expectimax(wrld)
+        if self.smart_monster_in_range(wrld, 3):
             print('BBBBB')
             self.minimax(wrld)
         elif not self.a_star(wrld):
@@ -287,7 +287,7 @@ class TestCharacter(CharacterEntity):
                             value = self.minHelper(newwrld)
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
-        pMax = -800
+        pMax = -1000
         i = 0
         index = 0
         for p in cMoves:
@@ -349,51 +349,68 @@ class TestCharacter(CharacterEntity):
         hTuples = []
         exit = wrld.exitcell
         event_found = 0
+        print(str(c.x) + " " + str(c.y))
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
-            if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
+            if ((c.x + dx) >= 0) and ((c.x + dx) < wrld.width() - 1):
                 # Loop through delta y
                 for dy in [-1, 0, 1]:
                     # Make sure the monster is moving
                     if (dx != 0) or (dy != 0):
                         # Avoid out-of-bound indexing
-                        if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
+                        if ((c.y + dy) >= 0) and ((c.y + dy) < wrld.height() - 1):
                             # No need to check impossible moves
-                            if not wrld.wall_at(c.x + dx, c.y + dy):
+                            print(str(c.x + dx) + " " + str(c.y + dy) + " " + str(wrld.width()) + " " + str(wrld.height()))
+                            if not (wrld.wall_at(c.x + dx, c.y + dy) and (dy == 0) and (dx == 0)):
                                 # Set move in wrld
                                 c.move(dx, dy)
                                 # Get new world
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= 100
-                                        print('aa ' + str(heuristic))
+                                        heuristic -= 1000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
                                         heuristic += 1000
-                                        print('bb ' + str(heuristic))
                                         event_found = 1
 
                                 if (event_found == 0):
                                     cc = next(iter(newwrld.characters.values()))[0]
                                     difXcm = abs(cc.x - m.x)
                                     difYcm = abs(cc.y - m.y)
-                                    difcm = (difXcm * difXcm) + (difYcm * difYcm)
-                                    heuristic = difcm - max(abs(exit[0]-cc.x), abs(exit[1]-cc.y))
-                                    print('cc ' + str(difcm) + ' ' + str(max(abs(exit[0]-cc.x), abs(exit[1]-cc.y))) + ' ' + str(heuristic))
+                                    # difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
+                                    difcm = difXcm + difYcm
+                                    # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
+                                    distToExit = (abs(exit[0]-cc.x) + abs(exit[1]-cc.y))
+                                    emptyAround = 0
+                                    for dx in [-1, 0, 1]:
+                                        # Avoid out-of-bound indexing
+                                        if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
+                                            # Loop through delta y
+                                            for dy in [-1, 0, 1]:
+                                                if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
+                                                    if (wrld.empty_at(c.x+ dx, c.y+dy)):
+                                                         emptyAround += 1
+
+
+                                    heuristic = 1.5 * difcm - 0.99 * distToExit + 0.4 * emptyAround                                
                                 h = (heuristic, c.x, c.y)
-                                print(str(dx) + ' ' + str(dx) + ' ' + str(heuristic))
                                 hTuples.append(h)
+
 
         pMin = 800
         i = 0
         index = 0
         for p in hTuples:
             if (p[0] < pMin):
-                pMax = p[0]
+                pMin = p[0]
                 index = i
             i += 1
-            return pMax
+
+        if (pMin == 800):
+            return -1000
+        else:
+            return pMin
 
 
