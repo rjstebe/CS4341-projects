@@ -42,18 +42,51 @@ def game_end(wrld):
     return False
 
 
+def distance_to_exit(positional_entity, wrld):
+    return max(abs(positional_entity.x - wrld.exitcell[0]), abs(positional_entity.y - wrld.exitcell[1]))
+
+
+def selfpreserving_look_for_character(wrld, monster, monster_range):
+    for dx in range(-monster.rnge, monster.rnge+1):
+        # Avoid out-of-bounds access
+        if (monster.x + dx >= 0) and (monster.x + dx < wrld.width()):
+            for dy in range(-monster_range, monster_range+1):
+                # Avoid out-of-bounds access
+                if (monster.y + dy >= 0) and (monster.y + dy < wrld.height()):
+                    # Is a character at this position?
+                    if wrld.characters_at(monster.x + dx, monster.y + dy):
+                        return (True, dx, dy)
+    # Nothing found
+    return (False, 0, 0)
+
+
+def selfpreserving_must_change_direction(wrld, monster):
+    # Get next desired position
+    (nx, ny) = monster.nextpos()
+    # If next pos is out of bounds, must change direction
+    if ((nx < 0) or (nx >= wrld.width()) or
+        (ny < 0) or (ny >= wrld.height())):
+        return True
+    # If these cells are an explosion, a wall, or a monster, go away
+    return (wrld.explosion_at(monster.x, monster.y) or
+            wrld.wall_at(nx, ny) or
+            wrld.monsters_at(nx, ny) or
+            wrld.exit_at(nx, ny))
+
+
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 2):
-            if self.smart_monster_in_range(wrld, 3):
-                # combination of minimax and expectimax, or reinforcement learning
-                self.miniexpectimax(wrld)
+        if self.random_monster_in_range(wrld, 4):
+            if self.smart_monster_in_range(wrld, 4):
+                # combination of minimax and expectimax
+                print("miniexpectimax")
+                self.miniexpectimax(wrld, 2, 4)
                 pass
             else:
                 print("expectimax")
                 self.expectimax(wrld)
-        elif self.smart_monster_in_range(wrld, 3):
+        elif self.smart_monster_in_range(wrld, 4):
             print("minimax")
             self.minimax(wrld)
         elif not self.a_star(wrld):
@@ -235,18 +268,131 @@ class TestCharacter(CharacterEntity):
         # if search failed to reach exit
         return False
 
-    def miniexpectimax(self, wrld):
-        solution = self.miniexpectimax_node(wrld, 0, 3, 0)
+    def miniexpectimax(self, wrld, depth, view_range):
+        solution = self.miniexpectimax_node(wrld, 0, depth, 0, view_range)
         self.move(solution[1], solution[2])
         if solution[3]:
             self.place_bomb()
 
     # Returns an array of best value, dx taken, dy taken, whether bomb was placed
-    def miniexpectimax_node(self, wrld, depth, max_depth, score_gained):
+    def miniexpectimax_node(self, wrld, depth, max_depth, score_gained, view_range):
+        # update score_gained and check for game end
+        end_flag = False
+        for e in wrld.events:
+            if e.tpe == Event.BOMB_HIT_WALL:
+                score_gained += 10
+            elif e.tpe == Event.BOMB_HIT_MONSTER:
+                score_gained += 50
+            elif e.tpe == Event.CHARACTER_FOUND_EXIT:
+                score_gained += 2*wrld.time
+                end_flag = True
+            elif e.tpe == Event.BOMB_HIT_CHARACTER or e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
+                end_flag = True
         # terminal states (uses no motion and no bomb placed as dummy values)
-        # if dead, h = score at start plus walls destroyed plus monsters destroyed*5
-        # if exited, h = score at start plus walls plus monsters*5 plus 2*time remaining
-        # if escaped range, h = score at start plus walls plus monsters*5 plus 2*(time remaining - distance to exit)
+        if end_flag:
+            return [score_gained+depth,0,0,False] # if game ended, return score gained in search
+        me = wrld.me(self)
+        if not self.random_monster_in_range(wrld, view_range) and not self.smart_monster_in_range(wrld, view_range):
+            # if escaped monsters, return score gained in search plus presumed score gained afterward from reaching the
+            # exit in the fewest number of moves (without pathfinding e.g. assuming route isn't blocked),
+            # or score gained from waiting until the time runs out.
+            presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)))
+            return [score_gained+depth+presumed_score,0,0,False]
+        if depth >= max_depth:
+            # if at max depth, assume character succeeds in escaping on the next step
+            presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)) - 1)
+            return [score_gained+depth+presumed_score,0,0,False]
+
+        best = [-10000, 0, 0, False]  # value, dx, dy, b
+        monsters = wrld.monsters.values()
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                # check if direction is not out of bounds or blocked
+                if (0 <= me.x + dx < wrld.width()) and \
+                        (0 <= me.y + dy < wrld.height()) and \
+                        not (wrld.wall_at(me.x + dx, me.y + dy)):
+                    # iterate for when bomb is placed or not placed
+                    for b in [True, False]:
+                        # make character's move
+                        me.move(dx, dy)
+                        me.maybe_place_bomb = b
+                        # recursively search for each monster's possible moves
+                        nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                        # update best if necessary
+                        if nv > best[0]:
+                            best = [nv, dx, dy, b]
+        return best
+
+    def monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters):
+        # if monsters list is empty, go to next step and continue the search
+        if not monsters:
+            nw = wrld.next()[0]
+            # continue search on that board
+            return self.miniexpectimax_node(nw, depth + 1, max_depth, score_gained, view_range)[0]
+        # otherwise find out first monster's move and if random, iterate over the possibilities
+        if monsters[0].name == "aggressive":
+            return self.selfpreserving_monster_node(wrld, depth, max_depth, score_gained, view_range, monsters, 2)
+        if monsters[0].name == "selfpreserving":
+            return self.selfpreserving_monster_node(wrld, depth, max_depth, score_gained, view_range, monsters, 1)
+        else:
+            return self.stupid_monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+
+    def stupid_monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters):
+        total = 0
+        count = 0
+        monster = monsters.pop(0)
+        # For each walkable adjacent cell (including diagonals and not moving)
+        for dx in [-1, 0, 1]:
+            # Avoid out-of-bounds access
+            if (monster.x + dx >= 0) and (monster.x + dx < wrld.width()):
+                for dy in [-1, 0, 1]:
+                    # Avoid out-of-bounds access
+                    if (monster.y + dy >= 0) and (monster.y + dy < wrld.height()):
+                        # Is this cell walkable?
+                        if not wrld.wall_at(monster.x + dx, monster.y + dy):
+                            monster.move(dx, dy)
+                            # iterate over rest of monsters
+                            total += self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                            count += 1
+        return total/count
+
+    def selfpreserving_monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters, monster_range):
+        monster = monsters.pop(0)
+        # If a character is in the neighborhood, go to it
+        (found, dx, dy) = selfpreserving_look_for_character(wrld, monster, monster_range)
+        if found and not selfpreserving_must_change_direction(wrld, monster):
+            monster.move(dx, dy)
+            # iterate over rest of monsters
+            return self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+        # If monster is idle or must change direction, iterate over each safe direction
+        if ((monster.dx == 0 and monster.dy == 0) or
+                selfpreserving_must_change_direction(wrld, monster)):
+            # Keep track of total value and number of options
+            total = 0
+            count = 0
+            # For each neighboring safe cell (including diagonals and not moving)
+            for dx in [-1, 0, 1]:
+                # Avoid out-of-bounds access
+                if (monster.x + dx >= 0) and (monster.x + dx < wrld.width()):
+                    for dy in [-1, 0, 1]:
+                        # Avoid out-of-bounds access
+                        if (monster.y + dy >= 0) and (monster.y + dy < wrld.height()):
+                            # Is this cell safe?
+                            if (wrld.exit_at(monster.x + dx, monster.y + dy) or
+                                    wrld.empty_at(monster.x + dx, monster.y + dy)):
+                                monster.move(dx, dy)
+                                # iterate over rest of monsters
+                                total += self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                                count += 1
+            if count:
+                # Return average of possible values
+                return total/count
+            else:
+                # Accept death
+                monster.move(0, 0)
+        # iterate over rest of monsters
+        return self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+
 
     def wall_search(self, wrld):
         solution = self.wall_search_node(wrld, 0, 3)
@@ -262,7 +408,7 @@ class TestCharacter(CharacterEntity):
         me = wrld.me(self)
         if depth >= max_depth:
             # if at max depth, return negative distance to exit as a heuristic
-            value = -max(abs(wrld.exitcell[0] - me.x), abs(wrld.exitcell[1] - me.y))
+            value = -distance_to_exit(me, wrld)
             if wall_in_danger(wrld):
                 # prioritize walls in danger
                 value += 1000
