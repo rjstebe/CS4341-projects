@@ -47,7 +47,7 @@ def distance_to_exit(positional_entity, wrld):
 
 
 def selfpreserving_look_for_character(wrld, monster, monster_range):
-    for dx in range(-monster.rnge, monster.rnge+1):
+    for dx in range(-monster_range, monster_range+1):
         # Avoid out-of-bounds access
         if (monster.x + dx >= 0) and (monster.x + dx < wrld.width()):
             for dy in range(-monster_range, monster_range+1):
@@ -77,18 +77,18 @@ def selfpreserving_must_change_direction(wrld, monster):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 4):
-            if self.smart_monster_in_range(wrld, 4):
+        # if self.random_monster_in_range(wrld, 4):
+        #     if self.smart_monster_in_range(wrld, 4):
+        if self.random_monster_in_range(wrld, 4) or self.smart_monster_in_range(wrld, 4):
                 # combination of minimax and expectimax
                 print("miniexpectimax")
-                self.miniexpectimax(wrld, 2, 4)
-                pass
-            else:
-                print("expectimax")
-                self.expectimax(wrld)
-        elif self.smart_monster_in_range(wrld, 4):
-            print("minimax")
-            self.minimax(wrld)
+                self.miniexpectimax(wrld, 4, 4)
+        #     else:
+        #         print("expectimax")
+        #         self.expectimax(wrld)
+        # elif self.smart_monster_in_range(wrld, 4):
+        #     print("minimax")
+        #     self.minimax(wrld)
         elif not self.a_star(wrld):
             print("wall search")
             self.wall_search(wrld)
@@ -304,7 +304,9 @@ class TestCharacter(CharacterEntity):
             return [score_gained+depth+presumed_score,0,0,False]
 
         best = [-10000, 0, 0, False]  # value, dx, dy, b
-        monsters = wrld.monsters.values()
+        monsters = []
+        for monster_list in list(wrld.monsters.values()):
+            monsters += monster_list
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 # check if direction is not out of bounds or blocked
@@ -318,6 +320,8 @@ class TestCharacter(CharacterEntity):
                         me.maybe_place_bomb = b
                         # recursively search for each monster's possible moves
                         nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                        if depth == 1:
+                            print("(dx, dy, b, v): (" + str(dx) + ", " + str(dy) + ", " + str(b) + ", " + str(nv) + ")")
                         # update best if necessary
                         if nv > best[0]:
                             best = [nv, dx, dy, b]
@@ -354,6 +358,8 @@ class TestCharacter(CharacterEntity):
                             # iterate over rest of monsters
                             total += self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
                             count += 1
+        if depth == 1:
+            print("(total, count): " + str(total) + ", " + str(count))
         return total/count
 
     def selfpreserving_monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters, monster_range):
@@ -386,6 +392,8 @@ class TestCharacter(CharacterEntity):
                                 count += 1
             if count:
                 # Return average of possible values
+                if depth == 1:
+                    print("(total, count): " + str(total) + ", " + str(count))
                 return total/count
             else:
                 # Accept death
