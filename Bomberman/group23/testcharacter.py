@@ -368,7 +368,7 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= 1000
+                                        heuristic -= 10000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
                                         heuristic += 1000
@@ -381,7 +381,7 @@ class TestCharacter(CharacterEntity):
                                     # difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
                                     # difcm = difXcm + difYcm
                                     # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
-                                    distToExit = max(abs(exit[0]-cc.x), abs(exit[1]-cc.y)) 
+                                    distToExit = abs(exit[0]-cc.x) + abs(exit[1]-cc.y) 
                                     # distToExit = math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
                                     # emptyAround = self.emptyCellsAround(wrld, c)
                                     # largestPossDist = max(wrld.width(), wrld.height())
@@ -392,11 +392,13 @@ class TestCharacter(CharacterEntity):
                                     # if (distToExit < 1.5):
                                         # heuristic -= 500
                                     # print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                     
-                                    heuristic = -1 * distToExit
-                                    print(str(cc.x) + "," + str(cc.y) + " " + str(m.x) + "," + str(m.y))
-                                    if not ((difXcm <3 and difYcm <3)):
+                                    heuristic = -1 * distToExit + difXcm + difYcm
+                                    print(str(cc.x) + "," + str(cc.y) + " " + str(m.x) + "," + str(m.y) + "difX " + str(difXcm)+ "difY " + str(difYcm))
+                                    if not (difXcm <= 5 and difYcm <= 5):
                                         print('here')
-                                        heuristic += 1000
+                                        heuristic += 1000 + self.emptyCellsAround(wrld, cc)
+                                    else: 
+                                        heuristic = 2 * (difXcm + difYcm) - (0.5) * distToExit + self.emptyCellsAround(wrld, cc)
                                     
                                 h = (heuristic, dx, dy)
                                 print(h)
