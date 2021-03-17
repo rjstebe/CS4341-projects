@@ -56,9 +56,9 @@ def selfpreserving_look_for_character(wrld, monster, monster_range):
                 if (monster.y + dy >= 0) and (monster.y + dy < wrld.height()):
                     # Is a character at this position?
                     if wrld.characters_at(monster.x + dx, monster.y + dy):
-                        return (True, dx, dy)
+                        return True, dx, dy
     # Nothing found
-    return (False, 0, 0)
+    return False, 0, 0
 
 
 def selfpreserving_must_change_direction(wrld, monster):
@@ -74,9 +74,10 @@ def selfpreserving_must_change_direction(wrld, monster):
             wrld.monsters_at(nx, ny) or
             wrld.exit_at(nx, ny))
 
+
 def in_danger_at(wrld, x, y):
     # Search for bomb about to go off and hit this space
-    if wrld.bomb_at(x, y) and wrld.bombs[wrld.index(x, y)].timer == 0:
+    if wrld.bomb_at(x, y) and wrld.bombs[wrld.index(x, y)].timer <= 1:
         return True
     # For each orthogonal direction, look for bomb about to go off with no other bomb, exit, or wall in between
     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
@@ -87,12 +88,26 @@ def in_danger_at(wrld, x, y):
                     wrld.wall_at(nx, ny) or wrld.exitcell == (nx, ny):
                 break
             if wrld.bomb_at(nx, ny):
-                if wrld.bombs[wrld.index(nx, ny)].timer == 0:
+                if wrld.bombs[wrld.index(nx, ny)].timer <= 1:
                     return True
                 else:
                     break
+    for mlist in list(wrld.monsters.values()):
+        for monster in mlist:
+            if monster.name == "selfpreserving":
+                if abs(x - monster.x) < 2 and abs(y - monster.y) < 2:
+                    return True
+            if monster.name == "aggressive":
+                if abs(x - monster.x) < 3 and abs(y - monster.y) < 3 and \
+                        not wrld.wall_at(__sign__(x - monster.x), __sign__(y - monster.y)):
+                    return True
     return False
 
+
+def __sign__(x):
+    if x == 0.0:
+        return 0
+    return int(math.copysign(1, x))
 
 
 class TestCharacter(CharacterEntity):
@@ -100,11 +115,11 @@ class TestCharacter(CharacterEntity):
     def do(self, wrld):
         # if self.random_monster_in_range(wrld, 4):
         #     if self.smart_monster_in_range(wrld, 4):
-        if self.random_monster_in_range(wrld, 2) or self.smart_monster_in_range(wrld, 2):
+        if self.random_monster_in_range(wrld, 5) or self.smart_monster_in_range(wrld, 5):
                 # combination of minimax and expectimax
                 start = time.time()
                 print("miniexpectimax")
-                self.miniexpectimax(wrld, 2, 2)
+                self.miniexpectimax(wrld, 2, 5)
                 print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, "), Time elapsed: ", time.time() - start)
         #     else:
         #         print("expectimax")
@@ -302,6 +317,7 @@ class TestCharacter(CharacterEntity):
 
     # Returns an array of best value, dx taken, dy taken, whether bomb was placed
     def miniexpectimax_node(self, wrld, depth, max_depth, score_gained, view_range):
+        me = wrld.me(self)
         # update score_gained and check for game end
         end_flag = False
         for e in wrld.events:
@@ -315,9 +331,8 @@ class TestCharacter(CharacterEntity):
             elif e.tpe == Event.BOMB_HIT_CHARACTER or e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
                 end_flag = True
         # terminal states (uses no motion and no bomb placed as dummy values)
-        if end_flag:
+        if end_flag or (depth != 0 and in_danger_at(wrld, me.x, me.y)):
             return [score_gained+depth, 0, 0, False]  # if game ended, return score gained in search
-        me = wrld.me(self)
         if not self.random_monster_in_range(wrld, view_range) and not self.smart_monster_in_range(wrld, view_range):
             # if escaped monsters, return score gained in search plus presumed score gained afterward from reaching the
             # exit in the fewest number of moves (without pathfinding e.g. assuming route isn't blocked),
