@@ -257,7 +257,8 @@ class TestCharacter(CharacterEntity):
                     current_y = current // wrld.width()
                     if (0 <= current_x + x < wrld.width()) and \
                             (0 <= current_y + y < wrld.height()) and \
-                            not (wrld.wall_at(current_x + x, current_y + y)):
+                            not (wrld.wall_at(current_x + x, current_y + y)) and \
+                            not (wrld.explosion_at(current_x + x, current_y + y)):
                         new_cost = cost_so_far[current] + 1
                         next_space = wrld.index(current_x + x, current_y + y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
