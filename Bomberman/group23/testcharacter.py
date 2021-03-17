@@ -1,5 +1,6 @@
 import queue
 import math
+import time
 # This is necessary to find the main code
 import sys
 
@@ -79,11 +80,12 @@ class TestCharacter(CharacterEntity):
     def do(self, wrld):
         # if self.random_monster_in_range(wrld, 4):
         #     if self.smart_monster_in_range(wrld, 4):
-        if self.random_monster_in_range(wrld, 4) or self.smart_monster_in_range(wrld, 4):
+        if self.random_monster_in_range(wrld, 3) or self.smart_monster_in_range(wrld, 3):
                 # combination of minimax and expectimax
-                print("miniexpectimax")
-                self.miniexpectimax(wrld, 3, 4)
-                print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, ")")
+                start = time.time()
+                print("miniexpectimax", start)
+                self.miniexpectimax(wrld, 3, 3)
+                print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, "), Time elapsed: ", time.time() - start)
         #     else:
         #         print("expectimax")
         #         self.expectimax(wrld)
@@ -293,8 +295,6 @@ class TestCharacter(CharacterEntity):
                 end_flag = True
         # terminal states (uses no motion and no bomb placed as dummy values)
         if end_flag:
-            if depth == 0:
-                print("died or exited", depth, score_gained)
             return [score_gained+depth, 0, 0, False]  # if game ended, return score gained in search
         me = wrld.me(self)
         if not self.random_monster_in_range(wrld, view_range) and not self.smart_monster_in_range(wrld, view_range):
@@ -302,14 +302,10 @@ class TestCharacter(CharacterEntity):
             # exit in the fewest number of moves (without pathfinding e.g. assuming route isn't blocked),
             # or score gained from waiting until the time runs out.
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)))
-            if depth == 0:
-                print("escaped", depth, score_gained, presumed_score)
             return [score_gained+depth+presumed_score, 0, 0, False]
         if depth >= max_depth:
             # if at max depth, assume character succeeds in escaping on the next step
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)) - 1)
-            if depth == 0:
-                print("max depth", depth, score_gained, presumed_score)
             return [score_gained+depth+presumed_score, 0, 0, False]
 
         best = [-10000, 0, 0, False]  # value, dx, dy, b
@@ -328,9 +324,8 @@ class TestCharacter(CharacterEntity):
                         me.move(dx, dy)
                         me.maybe_place_bomb = b
                         # recursively search for each monster's possible moves
-                        nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
-                        if depth == 0:
-                            print("(dx, dy, b, v): (" + str(dx) + ", " + str(dy) + ", " + str(b) + ", " + str(nv) + ")")
+                        nmonsters = monsters.copy()
+                        nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, nmonsters)
                         # update best if necessary
                         if nv > best[0]:
                             best = [nv, dx, dy, b]
@@ -365,13 +360,8 @@ class TestCharacter(CharacterEntity):
                         if not wrld.wall_at(monster.x + dx, monster.y + dy):
                             monster.move(dx, dy)
                             # iterate over rest of monsters
-                            nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
-                            total += nv
-                            if depth == 0:
-                                print(nv, dx, dy)
+                            total += self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
                             count += 1
-        if depth == 0:
-            print(total, count, total/count)
         return total/count
 
     def selfpreserving_monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters, monster_range):
