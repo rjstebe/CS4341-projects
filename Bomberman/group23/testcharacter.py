@@ -285,6 +285,8 @@ class TestCharacter(CharacterEntity):
                             if (b):
                                 continue
                             value = self.minHelper(newwrld)
+                            if (dy == 0 and dx == 0):
+                                value = value - 0.1
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
         pMax = -1000
@@ -368,10 +370,11 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= 10000
+                                        heuristic -= 100000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic += 1000
+                                        print("hi!!!!!!!!")
+                                        heuristic += 10000
                                         event_found = 1
 
                                 if (event_found == 0):
@@ -381,7 +384,9 @@ class TestCharacter(CharacterEntity):
                                     # difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
                                     # difcm = difXcm + difYcm
                                     # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
-                                    distToExit = abs(exit[0]-cc.x) + abs(exit[1]-cc.y) 
+                                    xToExit = abs(exit[0]-cc.x)
+                                    yToExit = abs(exit[1]-cc.y)
+                                    distToExit = max(xToExit, yToExit )
                                     # distToExit = math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
                                     # emptyAround = self.emptyCellsAround(wrld, c)
                                     # largestPossDist = max(wrld.width(), wrld.height())
@@ -392,14 +397,35 @@ class TestCharacter(CharacterEntity):
                                     # if (distToExit < 1.5):
                                         # heuristic -= 500
                                     # print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                     
-                                    heuristic = -1 * distToExit + difXcm + difYcm
-                                    print(str(cc.x) + "," + str(cc.y) + " " + str(m.x) + "," + str(m.y) + "difX " + str(difXcm)+ "difY " + str(difYcm))
-                                    if not (difXcm <= 5 and difYcm <= 5):
-                                        print('here')
-                                        heuristic += 1000 + self.emptyCellsAround(wrld, cc)
-                                    else: 
-                                        heuristic = 2 * (difXcm + difYcm) - (0.5) * distToExit + self.emptyCellsAround(wrld, cc)
                                     
+                                    print(str(cc.x) + "," + str(cc.y) + " " + str(m.x) + "," + str(m.y) + " difX " + str(difXcm)+ "difY " + str(difYcm))
+                                    if not (difXcm >= 5 or difYcm >= 5):
+                                        print('monster can see')
+                                        heuristic = 1000 + (0.5)* self.emptyCellsAround(wrld, cc) - 1 * distToExit + 7 * max(difXcm, difYcm) + 2* (abs(dx) + abs(dy))
+                                        if (distToExit <= difXcm + difYcm):
+                                            print("closer to exit")
+                                            heuristic = 9000 - distToExit + (abs(dx) + abs(dy)) 
+                                        elif (xToExit == 0 or yToExit == 0):
+                                            print("QQQQQQQQQQQ")
+                                            heuristic = 8000 - distToExit
+                                        elif (xToExit <= 1 and yToExit <= 1):
+                                            print("MotherFucker")
+                                            heuristic = 7000 - distToExit
+                                        elif (distToExit < 3):
+                                            print("jkhk")
+                                            heuristic = 6000 - 10 * distToExit + (abs(dx) + abs(dy)) + 2 * max(difXcm, difYcm)
+                                        elif (xToExit <= 2 and yToExit <= 2):
+                                            print("FUCK")
+                                            heuristic = 5000 - 8 * distToExit + (abs(dx) + abs(dy))
+                                        elif (difXcm <= 1 and difYcm <=1):
+                                            heuristic = -1000
+                                    
+                                        # elif (distToExit < 6):
+                                            # print("close to exit")
+                                            # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
+                                    else: 
+                                        heuristic = 2 * (difXcm + difYcm) - distToExit
+
                                 h = (heuristic, dx, dy)
                                 print(h)
                                 hTuples.append(h)
