@@ -74,17 +74,37 @@ def selfpreserving_must_change_direction(wrld, monster):
             wrld.monsters_at(nx, ny) or
             wrld.exit_at(nx, ny))
 
+def in_danger_at(wrld, x, y):
+    # Search for bomb about to go off and hit this space
+    if wrld.bomb_at(x, y) and wrld.bombs[wrld.index(x, y)].timer == 0:
+        return True
+    # For each orthogonal direction, look for bomb about to go off with no other bomb, exit, or wall in between
+    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for i in range(1, wrld.expl_range + 1):
+            nx = x + i*dx
+            ny = y + i*dy
+            if not (0 < nx < wrld.width()) or not (0 < ny < wrld.height()) or \
+                    wrld.wall_at(nx, ny) or wrld.exitcell == (nx, ny):
+                break
+            if wrld.bomb_at(nx, ny):
+                if wrld.bombs[wrld.index(nx, ny)].timer == 0:
+                    return True
+                else:
+                    break
+    return False
+
+
 
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
         # if self.random_monster_in_range(wrld, 4):
         #     if self.smart_monster_in_range(wrld, 4):
-        if self.random_monster_in_range(wrld, 3) or self.smart_monster_in_range(wrld, 3):
+        if self.random_monster_in_range(wrld, 2) or self.smart_monster_in_range(wrld, 2):
                 # combination of minimax and expectimax
                 start = time.time()
-                print("miniexpectimax", start)
-                self.miniexpectimax(wrld, 3, 3)
+                print("miniexpectimax")
+                self.miniexpectimax(wrld, 2, 2)
                 print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, "), Time elapsed: ", time.time() - start)
         #     else:
         #         print("expectimax")
@@ -260,7 +280,8 @@ class TestCharacter(CharacterEntity):
                     if (0 <= current_x + x < wrld.width()) and \
                             (0 <= current_y + y < wrld.height()) and \
                             not (wrld.wall_at(current_x + x, current_y + y)) and \
-                            not (wrld.explosion_at(current_x + x, current_y + y)):
+                            not (wrld.explosion_at(current_x + x, current_y + y)) and \
+                            not (in_danger_at(wrld, current_x + x, current_y + y)):
                         new_cost = cost_so_far[current] + 1
                         next_space = wrld.index(current_x + x, current_y + y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
