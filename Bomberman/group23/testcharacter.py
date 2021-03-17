@@ -82,7 +82,8 @@ class TestCharacter(CharacterEntity):
         if self.random_monster_in_range(wrld, 4) or self.smart_monster_in_range(wrld, 4):
                 # combination of minimax and expectimax
                 print("miniexpectimax")
-                self.miniexpectimax(wrld, 4, 4)
+                self.miniexpectimax(wrld, 3, 4)
+                print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, ")")
         #     else:
         #         print("expectimax")
         #         self.expectimax(wrld)
@@ -231,7 +232,7 @@ class TestCharacter(CharacterEntity):
     def a_star(self, wrld):
         print("astar")
         start = wrld.index(self.x, self.y)
-        exit = wrld.exitcell
+        exit_cell = wrld.exitcell
         frontier = queue.PriorityQueue()
         frontier.put((0, start))
         previous = {}
@@ -241,7 +242,7 @@ class TestCharacter(CharacterEntity):
         while not frontier.empty():
             current = frontier.get()[1]
 
-            if current == wrld.index(exit[0], exit[1]):
+            if current == wrld.index(exit_cell[0], exit_cell[1]):
                 # search reached exit: find first move
                 while previous[current] != start:
                     self.set_cell_color(current % wrld.width(), current // wrld.width(), Fore.RED + Back.GREEN)
@@ -261,7 +262,8 @@ class TestCharacter(CharacterEntity):
                         next_space = wrld.index(current_x + x, current_y + y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
                             cost_so_far[next_space] = new_cost
-                            priority = new_cost + max(abs(exit[0] - current_x - x), abs(exit[1] - current_y - y))
+                            priority = new_cost + max(abs(exit_cell[0] - current_x - x),
+                                                      abs(exit_cell[1] - current_y - y))
                             frontier.put((priority, next_space))
                             previous[next_space] = current
 
@@ -290,18 +292,24 @@ class TestCharacter(CharacterEntity):
                 end_flag = True
         # terminal states (uses no motion and no bomb placed as dummy values)
         if end_flag:
-            return [score_gained+depth,0,0,False] # if game ended, return score gained in search
+            if depth == 0:
+                print("died or exited", depth, score_gained)
+            return [score_gained+depth, 0, 0, False]  # if game ended, return score gained in search
         me = wrld.me(self)
         if not self.random_monster_in_range(wrld, view_range) and not self.smart_monster_in_range(wrld, view_range):
             # if escaped monsters, return score gained in search plus presumed score gained afterward from reaching the
             # exit in the fewest number of moves (without pathfinding e.g. assuming route isn't blocked),
             # or score gained from waiting until the time runs out.
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)))
-            return [score_gained+depth+presumed_score,0,0,False]
+            if depth == 0:
+                print("escaped", depth, score_gained, presumed_score)
+            return [score_gained+depth+presumed_score, 0, 0, False]
         if depth >= max_depth:
             # if at max depth, assume character succeeds in escaping on the next step
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)) - 1)
-            return [score_gained+depth+presumed_score,0,0,False]
+            if depth == 0:
+                print("max depth", depth, score_gained, presumed_score)
+            return [score_gained+depth+presumed_score, 0, 0, False]
 
         best = [-10000, 0, 0, False]  # value, dx, dy, b
         monsters = []
@@ -320,7 +328,7 @@ class TestCharacter(CharacterEntity):
                         me.maybe_place_bomb = b
                         # recursively search for each monster's possible moves
                         nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
-                        if depth == 1:
+                        if depth == 0:
                             print("(dx, dy, b, v): (" + str(dx) + ", " + str(dy) + ", " + str(b) + ", " + str(nv) + ")")
                         # update best if necessary
                         if nv > best[0]:
@@ -356,10 +364,13 @@ class TestCharacter(CharacterEntity):
                         if not wrld.wall_at(monster.x + dx, monster.y + dy):
                             monster.move(dx, dy)
                             # iterate over rest of monsters
-                            total += self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                            nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
+                            total += nv
+                            if depth == 0:
+                                print(nv, dx, dy)
                             count += 1
-        if depth == 1:
-            print("(total, count): " + str(total) + ", " + str(count))
+        if depth == 0:
+            print(total, count, total/count)
         return total/count
 
     def selfpreserving_monster_node(self, wrld, depth, max_depth, score_gained, view_range, monsters, monster_range):
@@ -392,15 +403,12 @@ class TestCharacter(CharacterEntity):
                                 count += 1
             if count:
                 # Return average of possible values
-                if depth == 1:
-                    print("(total, count): " + str(total) + ", " + str(count))
                 return total/count
             else:
                 # Accept death
                 monster.move(0, 0)
         # iterate over rest of monsters
         return self.monster_node(wrld, depth, max_depth, score_gained, view_range, monsters)
-
 
     def wall_search(self, wrld):
         solution = self.wall_search_node(wrld, 0, 3)
