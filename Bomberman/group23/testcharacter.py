@@ -265,23 +265,15 @@ class TestCharacter(CharacterEntity):
         cMoves = []
         c = next(iter(wrld.characters.values()))[0]
         # Loop through delta x
-        if (c is None):
-            print("ERROR")
-        print("before for loop")
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
-            print("first for loop")
             if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
-                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
                 # Loop through delta y
                 for dy in [-1, 0, 1]:
                     # Avoid out-of-bound indexing
-                    print("second for loop")
                     if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
-                        print("BBBBBBBBBBBBB")
                         # No need to check impossible moves
                         if not wrld.wall_at(c.x + dx, c.y + dy):
-                            print("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
                             # Set move in wrld
                             c.move(dx, dy)
                             # Get new world
@@ -297,18 +289,18 @@ class TestCharacter(CharacterEntity):
                                 value = value - 0.1
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
-                            print("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-            print("here")
-            pMax = -100000
-            i = 0
-            index = 0
-            for p in cMoves:
-                if (p[0] > pMax):
-                    pMax = p[0]
-                    index = i
-                i += 1
-            print(index)
-            self.move(cMoves[index][1], cMoves[index][2])
+
+        pMax = -100000
+        i = 0
+        index = 0
+        for p in cMoves:
+            print(str(p[0]) + " " + str(p[1]) + " " + str(p[2]))
+            if (p[0] >= pMax):
+                pMax = p[0]
+                index = i
+            i += 1
+        print(index)
+        self.move(cMoves[index][1], cMoves[index][2])
 
     def minHelper(self, wrld):
         m = next(iter(wrld.monsters.values()))[0]
@@ -384,38 +376,23 @@ class TestCharacter(CharacterEntity):
                                         heuristic -= 100000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        print("hi!!!!!!!!")
-                                        heuristic = 12000
+                                        heuristic = 100000
                                         event_found = 1
 
                                 if (event_found == 0):
                                     cc = next(iter(newwrld.characters.values()))[0]
                                     difXcm = abs(cc.x - m.x)
                                     difYcm = abs(cc.y - m.y)
-                                    # difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
-                                    # difcm = difXcm + difYcm
-                                    # heuristic = 2*difcm - math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
+                                    
                                     xToExit = abs(exit[0]-cc.x)
                                     yToExit = abs(exit[1]-cc.y)
                                     distToExit = max(xToExit, yToExit )
-                                    # distToExit = math.sqrt(((exit[0]-cc.x) * (exit[0]-cc.x)) + ((exit[1]-cc.y) * (exit[1] - cc.y)))
-                                    # emptyAround = self.emptyCellsAround(wrld, c)
-                                    # largestPossDist = max(wrld.width(), wrld.height())
-                                    # heuristic = difcm + -1 * (distToExit - largestPossDist) + emptyAround
-                                    #heuristic = difcm - (distToExit * distToExit)  + emptyAround            
-                                    # if (difcm <= 2):
-                                        # heuristic = 700
-                                    # if (distToExit < 1.5):
-                                        # heuristic -= 500
-                                    # print(str(1.5 * difcm) + " - " + str(0.99*distToExit) + " + " + str(emptyAround) + " = " + str(heuristic))                     
                                     
                                     
                                     if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
-                                        print("closer to exit")
                                         heuristic = 10000 - 1000 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
                                     elif not (difXcm >= 4 or difYcm >= 4):
-                                        print('monster can see')
-                                        heuristic = 1000 + (0.5)* self.emptyCellsAround(wrld, cc) - 1 * distToExit + 10 * max(difXcm, difYcm) + 2* (abs(dx) + abs(dy))
+                                        heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc) - 0.5 * (distToExit + xToExit + yToExit) + 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy))
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
                                     
@@ -423,14 +400,13 @@ class TestCharacter(CharacterEntity):
                                             # print("close to exit")
                                             # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
                                     else: 
-                                        heuristic = 5000 + 4 * max(difXcm, difYcm) - 1.5 * distToExit + (0.1)* self.emptyCellsAround(wrld, cc)
-
+                                        heuristic = 5000 - 1 * distToExit +  2 * self.emptyCellsAround(wrld, cc)
+                                
                                 h = (heuristic, dx, dy)
-                                print(h)
+                                # print(h)
                                 hTuples.append(h)
 
-
-        pMax = -800
+        pMax = -1000000
         i = 0
         index = 0
         for p in hTuples:
