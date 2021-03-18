@@ -17,29 +17,15 @@ def wall_in_danger(wrld):
         if e.tpe == Event.BOMB_HIT_WALL:
             return True
     return False
-    # for k, bomb in wrld.bombs.items():
-    #     nw = wrld.next()[0]
-    #     ev = nw.add_blast(bomb)
-    #     for e in ev:
-    #         if e.tpe == Event.BOMB_HIT_WALL:
-    #             return True
-    # return False
 
 
-def game_end(wrld):
+def game_end(wrld, character):
     # Time's up
     if wrld.time <= 0:
         return True
-    # No more characters left
-    if not wrld.characters:
+    # Character is dead
+    if wrld.me(character) is None:
         return True
-    # Last man standing
-    if not wrld.exitcell:
-        count = 0
-        for k, clist in wrld.characters.items():
-            count = count + len(clist)
-        if count == 0:
-            return True
     return False
 
 
@@ -78,30 +64,34 @@ def selfpreserving_must_change_direction(wrld, monster):
 def in_danger_at(wrld, x, y):
     # Search for bomb about to go off and hit this space
     if wrld.bomb_at(x, y) and wrld.bombs[wrld.index(x, y)].timer <= 1:
-        return True
+        return "bomb"
     # For each orthogonal direction, look for bomb about to go off with no other bomb, exit, or wall in between
     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         for i in range(1, wrld.expl_range + 1):
             nx = x + i*dx
             ny = y + i*dy
-            if not (0 < nx < wrld.width()) or not (0 < ny < wrld.height()) or \
+            if not (0 <= nx < wrld.width()) or not (0 <= ny < wrld.height()) or \
                     wrld.wall_at(nx, ny) or wrld.exitcell == (nx, ny):
                 break
             if wrld.bomb_at(nx, ny):
                 if wrld.bombs[wrld.index(nx, ny)].timer <= 1:
-                    return True
+                    return "bomb"
                 else:
                     break
     for mlist in list(wrld.monsters.values()):
         for monster in mlist:
-            if monster.name == "selfpreserving":
-                if abs(x - monster.x) < 2 and abs(y - monster.y) < 2:
-                    return True
-            if monster.name == "aggressive":
-                if abs(x - monster.x) < 3 and abs(y - monster.y) < 3 and \
-                        not wrld.wall_at(__sign__(x - monster.x), __sign__(y - monster.y)):
-                    return True
-    return False
+            mx = monster.x
+            my = monster.y
+            if monster.name != "stupid" and not selfpreserving_must_change_direction(wrld, monster):
+                mx += monster.dx
+                my += monster.dy
+            if monster.name == "selfpreserving" and abs(x - mx) < 2 and abs(y - my) < 2:
+                return "monster"
+            if monster.name == "aggressive" and abs(x - mx) < 3 and abs(y - my) < 3 and \
+                        not wrld.wall_at(__sign__(x - mx), __sign__(y - my)) and \
+                        not wrld.explosion_at(__sign__(x - mx), __sign__(y - my)):
+                return "monster"
+    return "safe"
 
 
 def __sign__(x):
@@ -113,39 +103,22 @@ def __sign__(x):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        # if self.random_monster_in_range(wrld, 4):
-        #     if self.smart_monster_in_range(wrld, 4):
-        if self.random_monster_in_range(wrld, 5) or self.smart_monster_in_range(wrld, 5):
+        if self.random_monster_in_range(wrld, 4):
+            if self.smart_monster_in_range(wrld, 4):
                 # combination of minimax and expectimax
                 start = time.time()
                 print("miniexpectimax")
-                self.miniexpectimax(wrld, 2, 5)
+                self.miniexpectimax(wrld, 2, 4)
                 print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, "), Time elapsed: ", time.time() - start)
-        #     else:
-        #         print("expectimax")
-        #         self.expectimax(wrld)
-        # elif self.smart_monster_in_range(wrld, 4):
-        #     print("minimax")
-        #     self.minimax(wrld)
+            else:
+                print("expectimax")
+                self.expectimax(wrld)
+        elif self.smart_monster_in_range(wrld, 4):
+            print("minimax")
+            self.minimax(wrld)
         elif not self.a_star(wrld):
             print("wall search")
             self.wall_search(wrld)
-
-        # expectimax: Mike
-        # minimax: Sam
-        # wall search: Ryan
-        # minimax/expectimax or reinforcement learning: Later
-
-        # minimax and expectimax looks at score + distance to exit
-        # variant 2: expectimax when monster is within 3 spaces
-
-        # variant 3: minimax when monster is within 3 spaces
-
-        # variant 4: minimax when monster is within 3 spaces
-
-        # variant 5: minimax/expectimax or reinforcement learning
-
-        # scenario 2: when a_star fails, search to destroy next wall
 
     def random_monster_in_range(self, wrld, distance):
         monsterList = iter(wrld.monsters.values())
@@ -296,7 +269,7 @@ class TestCharacter(CharacterEntity):
                             (0 <= current_y + y < wrld.height()) and \
                             not (wrld.wall_at(current_x + x, current_y + y)) and \
                             not (wrld.explosion_at(current_x + x, current_y + y)) and \
-                            not (in_danger_at(wrld, current_x + x, current_y + y)):
+                            not (in_danger_at(wrld, current_x + x, current_y + y) != "safe"):
                         new_cost = cost_so_far[current] + 1
                         next_space = wrld.index(current_x + x, current_y + y)
                         if next_space not in cost_so_far or new_cost < cost_so_far[next_space]:
@@ -331,20 +304,25 @@ class TestCharacter(CharacterEntity):
             elif e.tpe == Event.BOMB_HIT_CHARACTER or e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
                 end_flag = True
         # terminal states (uses no motion and no bomb placed as dummy values)
-        if end_flag or (depth != 0 and in_danger_at(wrld, me.x, me.y)):
+        if end_flag:
             return [score_gained+depth, 0, 0, False]  # if game ended, return score gained in search
         if not self.random_monster_in_range(wrld, view_range) and not self.smart_monster_in_range(wrld, view_range):
+            if in_danger_at(wrld, me.x, me.y) != "safe":  # if in immediate danger, assume death on next step
+                return [score_gained+depth+1, 0, 0, False]
             # if escaped monsters, return score gained in search plus presumed score gained afterward from reaching the
             # exit in the fewest number of moves (without pathfinding e.g. assuming route isn't blocked),
             # or score gained from waiting until the time runs out.
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)))
             return [score_gained+depth+presumed_score, 0, 0, False]
         if depth >= max_depth:
+            if in_danger_at(wrld, me.x, me.y) != "safe":  # if in immediate danger, assume death on next step
+                return [score_gained+depth+1, 0, 0, False]
             # if at max depth, assume character succeeds in escaping on the next step
             presumed_score = max(wrld.time, 2*(wrld.time - distance_to_exit(me, wrld)) - 1)
             return [score_gained+depth+presumed_score, 0, 0, False]
 
         best = [-10000, 0, 0, False]  # value, dx, dy, b
+        # get list of monsters
         monsters = []
         for monster_list in list(wrld.monsters.values()):
             monsters += monster_list
@@ -363,7 +341,10 @@ class TestCharacter(CharacterEntity):
                         nmonsters = monsters.copy()
                         nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, nmonsters)
                         # update best if necessary
-                        if nv > best[0]:
+                        # if equal to best, but closer to the center of the map, take new value
+                        if nv > best[0] or (nv == best[0] and
+                                            abs(self.x+dx-wrld.width()/2)+abs(self.y+dy-wrld.height()/2) <
+                                            abs(self.x+best[1]-wrld.width()/2)+abs(self.y+best[2]-wrld.height()/2)):
                             best = [nv, dx, dy, b]
         return best
 
@@ -446,10 +427,12 @@ class TestCharacter(CharacterEntity):
     # Returns an array of best value, dx taken, dy taken, whether bomb was placed
     def wall_search_node(self, wrld, depth, max_depth):
         # terminal states (uses no motion and no bomb placed as dummy values)
-        if game_end(wrld):
+        if game_end(wrld, self):
             return [-10000, 0, 0, False]  # if game ends its not because of reaching the exit in this case
         me = wrld.me(self)
         if depth >= max_depth:
+            if in_danger_at(wrld, me.x, me.y) != "safe":  # if in immediate danger, assume death on next step
+                return [-10000, 0, 0, False]
             # if at max depth, return negative distance to exit as a heuristic
             value = -distance_to_exit(me, wrld)
             if wall_in_danger(wrld):
