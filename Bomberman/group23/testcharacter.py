@@ -286,7 +286,7 @@ class TestCharacter(CharacterEntity):
                                 continue
                             value = self.minHelper(newwrld)
                             if (dy == 0 and dx == 0):
-                                value = value - 0.1
+                                value = value - 1
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
 
@@ -339,7 +339,7 @@ class TestCharacter(CharacterEntity):
         i = 0
         index = 0
         for p in distTuples:
-            if (p[0] < pMin):
+            if (p[0] <= pMin):
                 pMax = p[0]
                 index = i
             i += 1
@@ -392,7 +392,7 @@ class TestCharacter(CharacterEntity):
                                     if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
                                         heuristic = 10000 - 1000 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
                                     elif not (difXcm >= 4 or difYcm >= 4):
-                                        heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc) - 0.5 * (distToExit + xToExit + yToExit) + 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy))
+                                        heuristic = 1000 + 2 * self.emptyCellsAround(wrld, cc) - 0.5 * (distToExit) + 20 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - 10 * self.wallsAround(wrld, cc)
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
                                     
@@ -400,7 +400,7 @@ class TestCharacter(CharacterEntity):
                                             # print("close to exit")
                                             # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
                                     else: 
-                                        heuristic = 5000 - 1 * distToExit +  2 * self.emptyCellsAround(wrld, cc)
+                                        heuristic = 5000 - 1 * distToExit +  2 * self.emptyCellsAround(wrld, cc) - 2 * self.wallsAround(wrld, cc)
                                 
                                 h = (heuristic, dx, dy)
                                 # print(h)
@@ -437,7 +437,18 @@ class TestCharacter(CharacterEntity):
                      if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
                           if (wrld.empty_at(c.x+ dx, c.y+dy)):
                                emptyAround += 1
-        print(str(emptyAround) + " empty spaces")
         return emptyAround
+
+    def wallsAround(self, wrld, c):
+        walls = 0
+        for dx in [-1, 0, 1]:
+        # Avoid out-of-bound indexing
+            if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
+                # Loop through delta y
+                for dy in [-1, 1]:
+                     if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
+                          if (wrld.wall_at(c.x + dx, c.y + dy)):
+                               walls += 1
+        return walls
 
 
