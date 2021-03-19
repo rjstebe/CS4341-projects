@@ -114,8 +114,8 @@ class TestCharacter(CharacterEntity):
                print("expectimax")
                self.expectimax(wrld)
        elif self.smart_monster_in_range(wrld, 4):
-           print("minimax")
-           self.minimax(wrld)
+           print("minimax") # replaced with miniexpectimax due to minimax causing errors
+           self.miniexpectimax(wrld, 2, 4)
        elif not self.a_star(wrld):
             print("wall search")
             self.wall_search(wrld)
