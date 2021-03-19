@@ -1,4 +1,5 @@
 import queue
+import math
 # This is necessary to find the main code
 import sys
 import math
@@ -45,17 +46,19 @@ def game_end(wrld):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        # if self.random_monster_in_range(wrld, 1):
-            # if self.smart_monster_in_range(wrld, 2):
-                # print('AAAAAA')
+
+        if self.random_monster_in_range(wrld, 2):
+            if self.smart_monster_in_range(wrld, 3):
                 # combination of minimax and expectimax, or reinforcement learning
-                # pass
-            # else:
-                # self.expectimax(wrld)
-        if self.smart_monster_in_range(wrld, 4):
-            print('BBBBB')
+                pass
+            else:
+                print("expectimax")
+                self.expectimax(wrld)
+        elif self.smart_monster_in_range(wrld, 5):
+            print("minimax")
             self.minimax(wrld)
         elif not self.a_star(wrld):
+            print("wall search")
             self.wall_search(wrld)
 
         # expectimax: Mike
@@ -120,12 +123,15 @@ class TestCharacter(CharacterEntity):
                             for e in events:
                                 if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
                                     b = 1
+                                if (e.tpe == Event.CHARACTER_FOUND_EXIT):
+                                    self.move(dx, dy)
+                                    return
                             if (b):
                                 continue
                             value = self.expectimaxHelper(newwrld)
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
-        pMax = -800
+        pMax = -math.inf
         i = 0
         index = 0
         for p in cMoves:
@@ -157,9 +163,9 @@ class TestCharacter(CharacterEntity):
                                 (newwrld, events) = wrld.next()
                                 for e in events:
                                     if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
-                                        heuristic -= ((wrld.height() + wrld.width()) / 2)
+                                        heuristic -= 10000#((wrld.height() + wrld.width()) / 2)
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic += (wrld.height() + wrld.width())
+                                        heuristic += 10000#(wrld.height() + wrld.width())
                                 mm = next(iter(newwrld.monsters.values()))[0]
                                 difXcm = abs(c.x - mm.x)
                                 difYcm = abs(c.y - mm.y)
@@ -173,8 +179,10 @@ class TestCharacter(CharacterEntity):
 
 
 
+
     # based on pseudocode from class lecture
     def a_star(self, wrld):
+        print("astar")
         start = wrld.index(self.x, self.y)
         exit = wrld.exitcell
         frontier = queue.PriorityQueue()
@@ -189,16 +197,16 @@ class TestCharacter(CharacterEntity):
             if current == wrld.index(exit[0], exit[1]):
                 # search reached exit: find first move
                 while previous[current] != start:
-                    self.set_cell_color(current % wrld.width(), int(current / wrld.width()), Fore.RED + Back.GREEN)
+                    self.set_cell_color(current % wrld.width(), current // wrld.width(), Fore.RED + Back.GREEN)
                     current = previous[current]
                 # move in direction of first move
-                self.move(current % wrld.width() - self.x, int(current / wrld.width()) - self.y)
+                self.move(current % wrld.width() - self.x, current // wrld.width() - self.y)
                 return True
 
             for x in [-1, 0, 1]:
                 for y in [-1, 0, 1]:
                     current_x = current % wrld.width()
-                    current_y = int(current / wrld.width())
+                    current_y = current // wrld.width()
                     if (0 <= current_x + x < wrld.width()) and \
                             (0 <= current_y + y < wrld.height()) and \
                             not (wrld.wall_at(current_x + x, current_y + y)):
@@ -214,7 +222,7 @@ class TestCharacter(CharacterEntity):
         return False
 
     def wall_search(self, wrld):
-        solution = self.wall_search_node(wrld, 0, 2)
+        solution = self.wall_search_node(wrld, 0, 3)
         self.move(solution[1], solution[2])
         if solution[3]:
             self.place_bomb()
@@ -273,7 +281,7 @@ class TestCharacter(CharacterEntity):
                     # Avoid out-of-bound indexing
                     if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
                         # No need to check impossible moves
-                        if not wrld.wall_at(c.x + dx, c.y + dy):
+                        if wrld.empty_at(c.x + dx, c.y + dy):
                             # Set move in wrld
                             c.move(dx, dy)
                             # Get new world
@@ -299,8 +307,11 @@ class TestCharacter(CharacterEntity):
                 pMax = p[0]
                 index = i
             i += 1
-        print(index)
+        print(index)     
+
         self.move(cMoves[index][1], cMoves[index][2])
+        
+            
 
     def minHelper(self, wrld):
         m = next(iter(wrld.monsters.values()))[0]
@@ -372,7 +383,7 @@ class TestCharacter(CharacterEntity):
                                 # Get new world
                                 (newwrld, events) = wrld.next()
                                 for e in events:
-                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
+                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER or Event.BOMB_HIT_CHARACTER):
                                         heuristic -= 100000
                                         event_found = 1
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
@@ -381,26 +392,38 @@ class TestCharacter(CharacterEntity):
 
                                 if (event_found == 0):
                                     cc = next(iter(newwrld.characters.values()))[0]
+                                    # x and y monster distance
                                     difXcm = abs(cc.x - m.x)
                                     difYcm = abs(cc.y - m.y)
                                     
+                                    # x and y exit distance
                                     xToExit = abs(exit[0]-cc.x)
                                     yToExit = abs(exit[1]-cc.y)
-                                    distToExit = max(xToExit, yToExit )
+                                    distToExit = max(xToExit, yToExit)
+
+                                    # walls and empty spaces in range
+                                    walls = self.wallsAround(wrld, cc)
+                                    spaces = self.emptyCellsAround(wrld, cc)
+
+
+
                                     
-                                    
+                                    # run to the exit
                                     if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
-                                        heuristic = 10000 - 1000 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
+                                        heuristic = 10000 + -1000 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
+                                    # in range of the monster
                                     elif not (difXcm >= 4 or difYcm >= 4):
-                                        heuristic = 1000 + 2 * self.emptyCellsAround(wrld, cc) - 0.5 * (distToExit) + 20 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - 10 * self.wallsAround(wrld, cc)
+                                        heuristic = 1000 + 2 * spaces + 20 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - 10 * walls
+                                        # is about to die
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
                                     
                                         # elif (distToExit < 6):
                                             # print("close to exit")
                                             # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
+                                    # escape the monster
                                     else: 
-                                        heuristic = 5000 - 1 * distToExit +  2 * self.emptyCellsAround(wrld, cc) - 2 * self.wallsAround(wrld, cc)
+                                        heuristic = 5000 +  2 * spaces
                                 
                                 h = (heuristic, dx, dy)
                                 # print(h)
@@ -444,11 +467,10 @@ class TestCharacter(CharacterEntity):
         for dx in [-1, 0, 1]:
         # Avoid out-of-bound indexing
             if (c.x + dx >= 0) and (c.x + dx < wrld.width()):
-                # Loop through delta y
-                for dy in [-1, 1]:
-                     if (c.y + dy >= 0) and (c.y + dy < wrld.height()):
-                          if (wrld.wall_at(c.x + dx, c.y + dy)):
-                               walls += 1
+                # check underneath
+                if (c.y - 1 >= 0) and (c.y - 1 < wrld.height()):
+                    if (wrld.wall_at(c.x + dx, c.y -1)):
+                        walls += 1
         return walls
 
 
