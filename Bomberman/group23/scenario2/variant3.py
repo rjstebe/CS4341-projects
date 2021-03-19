@@ -28,4 +28,34 @@ g.add_character(TestCharacter("me", # name
 ))
 
 # Run!
-g.go()
+#g.go()
+
+# fails 5 14 26 out of 0-29
+# scores = []
+# results = []
+# for seed in range(0, 30):
+#     random.seed(seed)
+#     g = Game.fromfile('map.txt')
+#     g.add_monster(SelfPreservingMonster("selfpreserving",  # name
+#                                         "A",  # avatar
+#                                         3, 9,  # position
+#                                         1  # detection range
+#                                         ))
+#
+#     # TODO Add your character
+#     g.add_character(TestCharacter("me",  # name
+#                                   "C",  # avatar
+#                                   0, 0  # position
+#                                   ))
+#
+#     # Run!
+#     g.go(1)
+#     scores.append(g.world.scores["me"])
+#     results.append(g.world.events)
+# for score in scores:
+#     print(score)
+# for events in results:
+#     nevents = []
+#     for event in events:
+#         nevents.append(event.tpe)
+#     print(nevents)

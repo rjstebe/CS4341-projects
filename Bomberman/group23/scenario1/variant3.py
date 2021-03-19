@@ -29,3 +29,5 @@ g.add_character(TestCharacter("me", # name
 
 # Run!
 g.go()
+
+# fails 1 3 4 8 out of 0-29

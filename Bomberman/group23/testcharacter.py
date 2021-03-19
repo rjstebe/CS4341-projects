@@ -103,19 +103,20 @@ def __sign__(x):
 class TestCharacter(CharacterEntity):
 
     def do(self, wrld):
-        if self.random_monster_in_range(wrld, 4):
-            if self.smart_monster_in_range(wrld, 4):
+        # if self.random_monster_in_range(wrld, 4):
+        #     if self.smart_monster_in_range(wrld, 4):
+        if self.random_monster_in_range(wrld, 4) or self.smart_monster_in_range(wrld, 4):
                 # combination of minimax and expectimax
                 start = time.time()
                 print("miniexpectimax")
                 self.miniexpectimax(wrld, 2, 4)
                 print("selected input: (", self.dx, self.dy, self.maybe_place_bomb, "), Time elapsed: ", time.time() - start)
-            else:
-                print("expectimax")
-                self.expectimax(wrld)
-        elif self.smart_monster_in_range(wrld, 4):
-            print("minimax")
-            self.minimax(wrld)
+        #     else:
+        #         print("expectimax")
+        #         self.expectimax(wrld)
+        # elif self.smart_monster_in_range(wrld, 4):
+        #     print("minimax")
+        #     self.minimax(wrld)
         elif not self.a_star(wrld):
             print("wall search")
             self.wall_search(wrld)
@@ -340,6 +341,11 @@ class TestCharacter(CharacterEntity):
                         # recursively search for each monster's possible moves
                         nmonsters = monsters.copy()
                         nv = self.monster_node(wrld, depth, max_depth, score_gained, view_range, nmonsters)
+                        if depth == 0:
+                            print("(nv, dx, dy, b): (", nv, ", ", dx, ", ", dy, ", ", b, ")")
+                            print("monster x, y, dx, dy: ", monsters[0].x, monsters[0].y, monsters[0].dx, monsters[0].dy)
+                            print("name, must_change_direction: ", monsters[0].name, selfpreserving_must_change_direction(wrld, monsters[0]))
+                            print("in_danger_at: ", in_danger_at(wrld, self.x+dx, self.y+dy))
                         # update best if necessary
                         # if equal to best, but closer to the center of the map, take new value
                         if nv > best[0] or (nv == best[0] and
