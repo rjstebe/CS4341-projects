@@ -54,7 +54,7 @@ class TestCharacter(CharacterEntity):
             else:
                 print("expectimax")
                 self.expectimax(wrld)
-        elif self.smart_monster_in_range(wrld, 5):
+        elif self.smart_monster_in_range(wrld, 4):
             print("minimax")
             self.minimax(wrld)
         elif not self.a_star(wrld):
@@ -405,25 +405,18 @@ class TestCharacter(CharacterEntity):
                                     walls = self.wallsAround(wrld, cc)
                                     spaces = self.emptyCellsAround(wrld, cc)
 
-
-
-                                    
-                                    # run to the exit
                                     if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
-                                        heuristic = 10000 + -1000 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
-                                    # in range of the monster
-                                    elif not (difXcm >= 4 or difYcm >= 4):
-                                        heuristic = 1000 + 2 * spaces + 20 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - 10 * walls
-                                        # is about to die
+                                        heuristic = 10000 - 100 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
+                                    elif not (difXcm >= 5 or difYcm >= 5):
+                                        heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc)+ 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
                                     
                                         # elif (distToExit < 6):
                                             # print("close to exit")
                                             # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
-                                    # escape the monster
                                     else: 
-                                        heuristic = 5000 +  2 * spaces
+                                        heuristic = 6000 +  2 * self.emptyCellsAround(wrld, cc) + (abs(dx) + abs(dy)) - distToExit
                                 
                                 h = (heuristic, dx, dy)
                                 # print(h)
