@@ -164,7 +164,7 @@ class TestCharacter(CharacterEntity):
     def expectimax(self, toClone):
         wrld = SensedWorld.from_world(toClone)
         cMoves = []
-        c = next(iter(wrld.characters.values()))[0]
+        c = wrld.me(self)
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
@@ -183,11 +183,8 @@ class TestCharacter(CharacterEntity):
                             for e in events:
                                 if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
                                     b = 1
-                                if (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                    self.move(dx, dy)
-                                    return
-                            if (b):
-                                continue
+                                if (b):
+                                    continue
                             value = self.expectimaxHelper(newwrld)
                             moveTuple = (value, dx, dy)
                             cMoves.append(moveTuple)
@@ -487,8 +484,8 @@ class TestCharacter(CharacterEntity):
                             for e in events:
                                 if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER or Event.BOMB_HIT_CHARACTER):
                                     b = 1
-                            if (b):
-                                continue
+                                if (b):
+                                    continue
                             value = self.minHelper(newwrld)
                             if (dy == 0 and dx == 0):
                                 value = value - 1
@@ -504,16 +501,25 @@ class TestCharacter(CharacterEntity):
                 pMax = p[0]
                 index = i
             i += 1
-        print(index)     
+        print(index)  
         self.move(cMoves[index][1], cMoves[index][2])
         
             
 
     def minHelper(self, wrld):
-        m = next(iter(wrld.monsters.values()))[0]
-        c = next(iter(wrld.characters.values()))[0]
+        if not list(wrld.monsters.values()):
+            m = next(iter(wrld.monsters.values()))[0]
+        else:
+            return 100
+        c = wrld.me(self)
         heuristic = 0
         distTuples = []
+
+
+        if m is None:
+            return 10000
+        if c is None:
+            return -100000
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
@@ -531,7 +537,7 @@ class TestCharacter(CharacterEntity):
                                 # Get new world
                                 (newwrld, events) = wrld.next()
                                 for e in events:
-                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
+                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER or Event.BOMB_HIT_CHARACTER):
                                         heuristic -= 1000
                                     elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
                                         heuristic += 1000
@@ -541,6 +547,7 @@ class TestCharacter(CharacterEntity):
                                 difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
                                 dist = (difcm, m.x, m.y)
                                 distTuples.append(dist)
+                                
 
         pMin = 800
         i = 0
@@ -606,18 +613,13 @@ class TestCharacter(CharacterEntity):
                                     elif (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
                                         heuristic = 10000 - 100 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
                                     elif not (difXcm >= 4 or difYcm >= 4):
-                                        heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc)+ 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
+                                        heuristic = 1000 + 1.5 * spaces + 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
-                                    
-                                        # elif (distToExit < 6):
-                                            # print("close to exit")
-                                            # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
                                     else: 
                                         heuristic = 6000 +   0.1 * (abs(dx) + abs(dy)) - distToExit + max(difXcm, difYcm)
                                 
                                 h = (heuristic, dx, dy)
-                                # print(h)
                                 hTuples.append(h)
 
         pMax = -1000000
