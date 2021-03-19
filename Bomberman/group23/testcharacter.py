@@ -505,8 +505,9 @@ class TestCharacter(CharacterEntity):
         self.move(cMoves[index][1], cMoves[index][2])
         
             
-
+    #assumes the monster moves toward the character
     def minHelper(self, wrld):
+        #if the monster isn't dead
         if len(list(wrld.monsters.values())) != 0:
             m = next(iter(wrld.monsters.values()))[0]
         else:
@@ -518,13 +519,14 @@ class TestCharacter(CharacterEntity):
 
         if m is None:
             return 10000
+        #if the character is dead
         if c is None:
             return -100000
         
         m.move(m.x - c.x, m.y - c.y)
         return self.maxHelper(wrld)
 
-
+    #finds move with highest value as evaluated by the heuristic function
     def maxHelper(self, wrld):
         m = next(iter(wrld.monsters.values()))[0]
         c = next(iter(wrld.characters.values()))[0]
@@ -572,14 +574,18 @@ class TestCharacter(CharacterEntity):
                                     walls = self.wallsAround(wrld, cc)
                                     spaces = self.emptyCellsAround(wrld, cc)
                                     
+                                    #run away from bombs and explosions
                                     if (in_danger_at(wrld, cc.x, cc.y)):
                                         heuristic = - 10000
+                                    #run toward the exit
                                     elif (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
                                         heuristic = 10000 - 100 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
+                                    #if in monster's sight
                                     elif not (difXcm >= 4 or difYcm >= 4):
                                         heuristic = 1000 + 1.5 * spaces + 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
+                                    #escape monster
                                     else: 
                                         heuristic = 6000 +   0.1 * (abs(dx) + abs(dy)) - distToExit + max(difXcm, difYcm)
                                 
