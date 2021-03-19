@@ -485,7 +485,7 @@ class TestCharacter(CharacterEntity):
                             (newwrld, events) = wrld.next()
                             b = 0
                             for e in events:
-                                if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER):
+                                if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER or Event.BOMB_HIT_CHARACTER):
                                     b = 1
                             if (b):
                                 continue
@@ -505,7 +505,6 @@ class TestCharacter(CharacterEntity):
                 index = i
             i += 1
         print(index)     
-
         self.move(cMoves[index][1], cMoves[index][2])
         
             
@@ -574,7 +573,7 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if ((c.y + dy) >= 0) and ((c.y + dy) < wrld.height() - 1):
                             # No need to check impossible moves
-                            if not (wrld.wall_at(c.x + dx, c.y + dy)):
+                            if (wrld.empty_at(c.x + dx, c.y + dy)):
                                 # Set move in wrld
                                 c.move(dx, dy)
                                 # Get new world
@@ -601,8 +600,10 @@ class TestCharacter(CharacterEntity):
                                     # walls and empty spaces in range
                                     walls = self.wallsAround(wrld, cc)
                                     spaces = self.emptyCellsAround(wrld, cc)
-
-                                    if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
+                                    
+                                    if (in_danger_at(wrld, cc.x, cc.y)):
+                                        heuristic = - 10000
+                                    elif (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
                                         heuristic = 10000 - 100 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
                                     elif not (difXcm >= 4 or difYcm >= 4):
                                         heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc)+ 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
@@ -630,15 +631,6 @@ class TestCharacter(CharacterEntity):
 
         return pMax
 
-    def monster_in_range(self, difXcm, difYcm):
-        if (difXcm <=2 and difYcm <= 2):
-            return 1
-        #elif (difYcm <=2 and difYcm == 0):
-            #return 1
-        #elif (difYcm == difXcm) and ((difYcm ==1) or (difYcm ==2)):
-            #return 1
-        else:
-            return 0
 
     def emptyCellsAround(self, wrld, c):
         emptyAround = 0
