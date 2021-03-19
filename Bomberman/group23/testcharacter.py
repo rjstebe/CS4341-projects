@@ -507,7 +507,7 @@ class TestCharacter(CharacterEntity):
             
 
     def minHelper(self, wrld):
-        if not list(wrld.monsters.values()):
+        if len(list(wrld.monsters.values())) != 0:
             m = next(iter(wrld.monsters.values()))[0]
         else:
             return 100
@@ -520,44 +520,8 @@ class TestCharacter(CharacterEntity):
             return 10000
         if c is None:
             return -100000
-        # Loop through delta x
-        for dx in [-1, 0, 1]:
-            # Avoid out-of-bound indexing
-            if (m.x + dx >= 0) and (m.x + dx < wrld.width()):
-                # Loop through delta y
-                for dy in [-1, 0, 1]:
-                    # Make sure the monster is moving
-                    if (dx != 0) or (dy != 0):
-                        # Avoid out-of-bound indexing
-                        if (m.y + dy >= 0) and (m.y + dy < wrld.height()):
-                            # No need to check impossible moves
-                            if not wrld.wall_at(m.x + dx, m.y + dy):
-                                # Set move in wrld
-                                m.move(dx, dy)
-                                # Get new world
-                                (newwrld, events) = wrld.next()
-                                for e in events:
-                                    if (e.tpe == Event.CHARACTER_KILLED_BY_MONSTER or Event.BOMB_HIT_CHARACTER):
-                                        heuristic -= 1000
-                                    elif (e.tpe == Event.CHARACTER_FOUND_EXIT):
-                                        heuristic += 1000
-                                mm = next(iter(newwrld.monsters.values()))[0]
-                                difXcm = abs(c.x - mm.x)
-                                difYcm = abs(c.y - mm.y)
-                                difcm = math.sqrt((difXcm * difXcm) + (difYcm * difYcm))
-                                dist = (difcm, m.x, m.y)
-                                distTuples.append(dist)
-                                
-
-        pMin = 800
-        i = 0
-        index = 0
-        for p in distTuples:
-            if (p[0] <= pMin):
-                pMax = p[0]
-                index = i
-            i += 1
-        m.move(distTuples[index][1] - m.x, distTuples[index][2] - m.y)
+        
+        m.move(m.x - c.x, m.y - c.y)
         return self.maxHelper(wrld)
 
 
