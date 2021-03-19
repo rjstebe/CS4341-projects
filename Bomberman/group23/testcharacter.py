@@ -407,7 +407,7 @@ class TestCharacter(CharacterEntity):
 
                                     if (distToExit <= 3 or distToExit < max(difXcm, difYcm)):
                                         heuristic = 10000 - 100 * distToExit + (abs(dx) + abs(dy)) + max(difXcm, difYcm) - xToExit- yToExit
-                                    elif not (difXcm >= 5 or difYcm >= 5):
+                                    elif not (difXcm >= 4 or difYcm >= 4):
                                         heuristic = 1000 + 1.5 * self.emptyCellsAround(wrld, cc)+ 10 * max(difXcm, difYcm) + (abs(dx) + abs(dy)) - walls
                                         if (difXcm <= 1 and difYcm <=1):
                                             heuristic = -10000
@@ -416,7 +416,7 @@ class TestCharacter(CharacterEntity):
                                             # print("close to exit")
                                             # heuristic = 2000 - 6 * distToExit + 2 * (difXcm + difYcm) + 0.1 * (abs(dx) + abs(dy))
                                     else: 
-                                        heuristic = 6000 +  2 * self.emptyCellsAround(wrld, cc) + (abs(dx) + abs(dy)) - distToExit
+                                        heuristic = 6000 +   0.1 * (abs(dx) + abs(dy)) - distToExit + max(difXcm, difYcm)
                                 
                                 h = (heuristic, dx, dy)
                                 # print(h)

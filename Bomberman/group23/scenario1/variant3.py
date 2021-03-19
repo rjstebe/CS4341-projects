@@ -38,7 +38,7 @@ for seed in range(0, 100):
     
     g.add_monster(SelfPreservingMonster("selfpreserving",  # name
                                         "S",  # avatar
-                                        3, 13,  # position
+                                        3, 9,  # position
                                         1  # detection range
                                         ))
 

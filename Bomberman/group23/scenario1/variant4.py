@@ -35,7 +35,7 @@ g = Game.fromfile('map.txt')
 
 scores = []
 results = []
-for seed in range(0, 200):
+for seed in range(0, 100):
     random.seed(seed)
     g = Game.fromfile('map.txt')
     
